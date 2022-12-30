@@ -1,6 +1,6 @@
 # ForceField
 
-Very epic, yet simplistic, forcefield plugin! Push players and/or mobs to your heart's content! Support Minecraft 1.11+
+Very epic, yet simplistic, forcefield plugin! Push players and/or mobs to your heart's content! Supports Minecraft 1.11+
 
 - **🐛 Bugs / 💡 Suggestions:** Please [open an issue](https://github.com/srnyx/forcefield/issues/new/choose) to report a bug or suggest an idea
 - **🆘 Support:** Please [join the Discord](https://srnyx.xyz/discord) to get support
