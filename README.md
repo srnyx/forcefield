@@ -7,7 +7,7 @@ Very epic, yet simplistic, forcefield plugin! Push players and/or mobs to your h
 
 ### Download
 
-- **Stable:** You can download the latest **stable** version at [Modrinth](https://modrinth.com/plugin/forcefield), [Polymart](https://polymart.org/resource/3238), [Spigot](https://spigotmc.org/resources/106637), or [Bukkit](https://dev.bukkit.org/projects/forcefieldplugin)
+- **Stable:** You can download the latest **stable** version at [Modrinth](https://modrinth.com/plugin/forcefield), [Polymart](https://polymart.org/resource/3260), [Spigot](https://spigotmc.org/resources/107048), or [Bukkit](https://dev.bukkit.org/projects/forcefieldplugin)
 - **Snapshot:** You can download the latest **snapshot** version at [actions/workflows/build.yml](https://github.com/srnyx/forcefield/actions/workflows/build.yml)
 
 ## Commands
