@@ -1,0 +1,8 @@
+# Default options for forcefields
+default:
+  # Whether mobs are affected by the forcefield
+  mobs: false
+  # The radius of the forcefield
+  radius: 5
+  # How strong the forcefield is
+  strength: 0.5
