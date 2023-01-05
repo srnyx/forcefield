@@ -13,9 +13,11 @@ import xyz.srnyx.annoyingapi.command.AnnoyingCommand;
 import xyz.srnyx.annoyingapi.command.AnnoyingSender;
 
 import xyz.srnyx.forcefield.ForceField;
-import xyz.srnyx.forcefield.ForcefieldOptions;
+import xyz.srnyx.forcefield.enums.SpecialForcefield;
+import xyz.srnyx.forcefield.objects.ForcefieldOptions;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 
@@ -44,183 +46,104 @@ public class ForcefieldCommand implements AnnoyingCommand {
         // No arguments (toggle)
         if (args.length == 0 && sender.checkPlayer() && sender.checkPermission("forcefield.command.toggle")) {
             final ForcefieldOptions options = plugin.getOptions(sender.getPlayer());
-            options.setEnabled(!options.getEnabled());
-            new AnnoyingMessage(plugin, "command.toggle.self")
-                    .replace("%state%", options.getEnabled(), AnnoyingMessage.DefaultReplaceType.BOOLEAN)
-                    .send(sender);
+            options.setEnabled(!options.enabled, sender);
             return;
         }
 
-        // <toggle|mobs|reload>
-        if (args.length == 1 && sender.checkPlayer()) {
-            // toggle
-            if (sender.argEquals(0, "toggle") && sender.checkPermission("forcefield.command.toggle")) {
-                final ForcefieldOptions options = plugin.getOptions(sender.getPlayer());
-                options.setEnabled(!options.getEnabled());
-                new AnnoyingMessage(plugin, "command.toggle.self")
-                        .replace("%state%", options.getEnabled(), AnnoyingMessage.DefaultReplaceType.BOOLEAN)
-                        .send(sender);
-                return;
-            }
-
-            // mobs
-            if (sender.argEquals(0, "mobs") && sender.checkPermission("forcefield.command.mobs")) {
-                final ForcefieldOptions options = plugin.getOptions(sender.getPlayer());
-                options.setMobs(!options.getMobs());
-                new AnnoyingMessage(plugin, "command.mobs.self")
-                        .replace("%state%", options.getMobs(), AnnoyingMessage.DefaultReplaceType.BOOLEAN)
-                        .send(sender);
-                return;
-            }
-
+        // <reload|toggle|inverse|mobs|blocks>
+        if (args.length == 1) {
             // reload
             if (sender.argEquals(0, "reload") && sender.checkPermission("forcefield.command.reload")) {
-                plugin.enable();
+                plugin.reloadPlugin();
                 new AnnoyingMessage(plugin, "command.reload").send(sender);
                 return;
             }
-        }
 
-        // <toggle|mobs> <on|off>, <radius|strength> [<double>]
-        if (args.length == 2 && sender.checkPlayer()) {
-            // toggle <on|off>
-            if (sender.argEquals(0, "toggle") && sender.checkPermission("forcefield.command.toggle")) {
-                final ForcefieldOptions options = plugin.getOptions(sender.getPlayer());
-                options.setEnabled(sender.argEquals(1, "on"));
-                new AnnoyingMessage(plugin, "command.toggle.self")
-                        .replace("%state%", options.getEnabled(), AnnoyingMessage.DefaultReplaceType.BOOLEAN)
-                        .send(sender);
-                return;
-            }
+            // <toggle|inverse|mobs|blocks>
+            if (sender.checkPlayer()) {
+                final Player player = sender.getPlayer();
+                final ForcefieldOptions options = plugin.getOptions(player);
 
-            // mobs <on|off>
-            if (sender.argEquals(0, "mobs") && sender.checkPermission("forcefield.command.mobs")) {
-                final ForcefieldOptions options = plugin.getOptions(sender.getPlayer());
-                options.setMobs(sender.argEquals(1, "on"));
-                new AnnoyingMessage(plugin, "command.mobs.self")
-                        .replace("%state%", options.getMobs(), AnnoyingMessage.DefaultReplaceType.BOOLEAN)
-                        .send(sender);
-                return;
-            }
-
-            // radius [<double>]
-            if (sender.argEquals(0, "radius") && sender.checkPermission("forcefield.command.radius")) {
-                // Get radius
-                final double radius;
-                try {
-                    radius = Double.parseDouble(args[1]);
-                } catch (final NumberFormatException e) {
-                    new AnnoyingMessage(plugin, "error.invalid-argument")
-                            .replace("%argument%", args[1])
-                            .send(sender);
+                // toggle
+                if (sender.argEquals(0, "toggle") && sender.checkPermission("forcefield.command.toggle")) {
+                    options.setEnabled(!options.enabled, sender);
                     return;
                 }
 
-                // Set radius
-                plugin.getOptions(sender.getPlayer()).setRadius(radius);
-                new AnnoyingMessage(plugin, "command.radius.self")
-                        .replace("%radius%", args[1], AnnoyingMessage.DefaultReplaceType.NUMBER)
-                        .send(sender);
-                return;
-            }
-
-            // strength [<double>]
-            if (sender.argEquals(0, "strength") && sender.checkPermission("forcefield.command.strength")) {
-                // Get strength
-                final double strength;
-                try {
-                    strength = Double.parseDouble(args[1]);
-                } catch (final NumberFormatException e) {
-                    new AnnoyingMessage(plugin, "error.invalid-argument")
-                            .replace("%argument%", args[1])
-                            .send(sender);
+                // inverse
+                if (sender.argEquals(0, "inverse") && sender.checkPermission("forcefield.command.inverse")) {
+                    options.setInverse(!options.inverse, sender);
                     return;
                 }
 
-                // Set strength
-                plugin.getOptions(sender.getPlayer()).setStrength(strength);
-                new AnnoyingMessage(plugin, "command.strength.self")
-                        .replace("%strength%", args[1], AnnoyingMessage.DefaultReplaceType.NUMBER)
-                        .send(sender);
-                return;
+                // mobs
+                if (sender.argEquals(0, "mobs") && sender.checkPermission("forcefield.command.mobs")) {
+                    options.setMobs(!options.mobs, sender);
+                    return;
+                }
+
+                // blocks
+                if (sender.argEquals(0, "blocks")) {
+                    options.setBlocks(!options.blocks, sender);
+                    return;
+                }
             }
         }
 
-        // <toggle|mobs> <on|off> [<player>], <radius|strength> [<double>] [<player>]
-        if (args.length == 3 && sender.checkPermission("forcefield.others")) {
-            // Get target
-            final Player target = Bukkit.getPlayer(args[2]);
-            if (target == null) {
-                new AnnoyingMessage(plugin, "error.invalid-argument")
-                        .replace("%argument%", args[2])
-                        .send(sender);
-                return;
-            }
+        // <toggle|inverse|mobs|blocks> <on|off> [<player>], <radius|strength> [<number>] [<player>], special [<special>] [<player>]
+        if (args.length >= 2) {
+            final Player player;
+            if (args.length == 3 && sender.checkPermission("forcefield.command.other")) {
+                player = Bukkit.getPlayer(args[2]);
+                if (player == null) {
+                    new AnnoyingMessage(plugin, "command.invalid-argument")
+                            .replace("%argument%", args[2])
+                            .send(sender);
+                    return;
+                }
+            } else if (sender.checkPlayer()) {
+                player = sender.getPlayer();
+            } else return;
+            final ForcefieldOptions options = plugin.getOptions(player);
 
             // toggle <on|off> [<player>]
             if (sender.argEquals(0, "toggle") && sender.checkPermission("forcefield.command.toggle")) {
-                final ForcefieldOptions options = plugin.getOptions(target);
-                options.setEnabled(sender.argEquals(1, "on"));
-                new AnnoyingMessage(plugin, "command.toggle.other")
-                        .replace("%state%", options.getEnabled(), AnnoyingMessage.DefaultReplaceType.BOOLEAN)
-                        .replace("%target%", target.getName())
-                        .send(sender);
+                options.setEnabled(sender.argEquals(1, "on"), sender);
+                return;
+            }
+
+            // inverse <on|off> [<player>]
+            if (sender.argEquals(0, "inverse") && sender.checkPermission("forcefield.command.inverse")) {
+                options.setInverse(sender.argEquals(1, "on"), sender);
                 return;
             }
 
             // mobs <on|off> [<player>]
             if (sender.argEquals(0, "mobs") && sender.checkPermission("forcefield.command.mobs")) {
-                final ForcefieldOptions options = plugin.getOptions(target);
-                options.setMobs(sender.argEquals(1, "on"));
-                new AnnoyingMessage(plugin, "command.mobs.other")
-                        .replace("%state%", options.getMobs(), AnnoyingMessage.DefaultReplaceType.BOOLEAN)
-                        .replace("%target%", target.getName())
-                        .send(sender);
+                options.setMobs(sender.argEquals(1, "on"), sender);
                 return;
             }
 
-            // radius [<double>] [<player>]
+            // blocks <on|off> [<player>]
+            if (sender.argEquals(0, "blocks")) {
+                options.setBlocks(sender.argEquals(1, "on"), sender);
+                return;
+            }
+
+            // radius [<number>] [<player>]
             if (sender.argEquals(0, "radius") && sender.checkPermission("forcefield.command.radius")) {
-                // Get radius
-                final double radius;
-                try {
-                    radius = Double.parseDouble(args[1]);
-                } catch (final NumberFormatException e) {
-                    new AnnoyingMessage(plugin, "error.invalid-argument")
-                            .replace("%argument%", args[1])
-                            .send(sender);
-                    return;
-                }
-
-                // Set radius
-                plugin.getOptions(target).setRadius(radius);
-                new AnnoyingMessage(plugin, "command.radius.other")
-                        .replace("%radius%", args[1], AnnoyingMessage.DefaultReplaceType.NUMBER)
-                        .replace("%target%", target.getName())
-                        .send(sender);
+                options.setRadius(args[1], sender);
                 return;
             }
 
-            // strength [<double>] [<player>]
+            // strength [<number>] [<player>]
             if (sender.argEquals(0, "strength") && sender.checkPermission("forcefield.command.strength")) {
-                // Get strength
-                final double strength;
-                try {
-                    strength = Double.parseDouble(args[1]);
-                } catch (final NumberFormatException e) {
-                    new AnnoyingMessage(plugin, "error.invalid-argument")
-                            .replace("%argument%", args[1])
-                            .send(sender);
-                    return;
-                }
-
-                // Set strength
-                plugin.getOptions(target).setStrength(strength);
-                new AnnoyingMessage(plugin, "command.strength.other")
-                        .replace("%strength%", args[1], AnnoyingMessage.DefaultReplaceType.NUMBER)
-                        .replace("%target%", target.getName())
-                        .send(sender);
+                options.setStrength(args[1], sender);
+                return;
             }
+
+            // special [<special>] [<player>]
+            if (sender.argEquals(0, "special") && sender.checkPermission("forcefield.command.special")) options.setSpecial(args[1], sender);
         }
     }
 
@@ -228,63 +151,86 @@ public class ForcefieldCommand implements AnnoyingCommand {
     public Collection<String> onTabComplete(@NotNull AnnoyingSender sender) {
         final String[] args = sender.getArgs();
 
-        // <toggle|mobs|radius|strength|reload>
-        if (args.length == 1) return Arrays.asList("toggle", "mobs", "radius", "strength", "reload");
+        // <reload|toggle|inverse|special|mobs|blocks|radius|strength>
+        if (args.length == 1) return Arrays.asList("reload", "toggle", "inverse", "mobs", "blocks", "radius", "strength", "special");
 
-        // <toggle|mobs> <on|off>, <radius|strength> [<double>]
+        // <toggle|inverse|mobs|blocks> <on|off>, <radius|strength> [<number>], special [<special>]
         if (args.length == 2) {
-            // <toggle|mobs> <on|off>
-            if (sender.argEquals(0, "toggle") || sender.argEquals(0, "mobs")) return Arrays.asList("on", "off");
-            // <radius|strength> [<double>]
-            if (sender.argEquals(0, "radius") || sender.argEquals(0, "strength")) return Collections.singleton("[<double>]");
+            // <toggle|inverse|mobs|blocks> <on|off>
+            if (sender.argEquals(0, "toggle", "inverse", "mobs", "blocks")) return Arrays.asList("on", "off");
+            // <radius|strength> [<number>]
+            if (sender.argEquals(0, "radius", "strength")) return Collections.singleton("[<number>]");
+            // special [<special>]
+            if (sender.argEquals(0, "special")) {
+                final Set<String> completions = new HashSet<>();
+                completions.add("NONE");
+                for (final SpecialForcefield special : SpecialForcefield.values()) completions.add(special.name());
+                return completions;
+            }
         }
 
-        // <toggle|mobs> <on|off> [<player>], <radius|strength> [<double>] [<player>]
+        // <toggle|inverse|mobs|blocks> <on|off> [<player>], <radius|strength> [<number>] [<player>], special [<special>] [<player>]
         if (args.length == 3) {
             // toggle <on|off> [<player>]
             if (sender.argEquals(0, "toggle")) {
                 // toggle on [<player>]
-                if (sender.argEquals(1, "on")) return Bukkit.getOnlinePlayers().stream()
-                        .filter(player -> {
-                            final ForcefieldOptions options = plugin.forcefields.get(player.getUniqueId());
-                            return options == null || !options.getEnabled();
-                        })
-                        .map(Player::getName)
-                        .collect(Collectors.toList());
-
+                if (sender.argEquals(1, "on")) return getPlayerNames(options -> options == null || !options.enabled);
                 // toggle off [<player>]
                 if (sender.argEquals(1, "off")) return plugin.forcefields.entrySet().stream()
-                        .filter(entry -> entry.getValue().getEnabled())
+                        .filter(entry -> entry.getValue().enabled)
                         .map(entry -> Bukkit.getPlayer(entry.getKey()))
                         .filter(Objects::nonNull)
                         .map(Player::getName)
                         .collect(Collectors.toSet());
+            }
+
+            // inverse <on|off> [<player>]
+            if (sender.argEquals(0, "inverse")) {
+                // inverse on [<player>]
+                if (sender.argEquals(1, "on")) return getPlayerNames(options -> (options != null && !options.inverse) || (options == null && !plugin.config.defaultInverse));
+                // inverse off [<player>]
+                if (sender.argEquals(1, "off")) return getPlayerNames(options -> (options != null && options.inverse) || (options == null && plugin.config.defaultInverse));
             }
 
             // mobs <on|off> [<player>]
             if (sender.argEquals(0, "mobs")) {
                 // mobs on [<player>]
-                if (sender.argEquals(1, "on")) return Bukkit.getOnlinePlayers().stream()
-                        .filter(player -> {
-                            final ForcefieldOptions options = plugin.forcefields.get(player.getUniqueId());
-                            return options == null || !options.getMobs();
-                        })
-                        .map(Player::getName)
-                        .collect(Collectors.toList());
-
+                if (sender.argEquals(1, "on")) return getPlayerNames(options -> (options != null && !options.mobs) || (options == null && !plugin.config.defaultMobs));
                 // mobs off [<player>]
+                if (sender.argEquals(1, "off")) return getPlayerNames(options -> (options != null && options.mobs) || (options == null && plugin.config.defaultMobs));
+            }
+
+            // blocks <on|off> [<player>]
+            if (sender.argEquals(0, "blocks")) {
+                // blocks on [<player>]
+                if (sender.argEquals(1, "on")) return getPlayerNames(options -> options == null || !options.blocks);
+                // blocks off [<player>]
                 if (sender.argEquals(1, "off")) return plugin.forcefields.entrySet().stream()
-                        .filter(entry -> entry.getValue().getMobs())
+                        .filter(entry -> entry.getValue().blocks)
                         .map(entry -> Bukkit.getPlayer(entry.getKey()))
                         .filter(Objects::nonNull)
                         .map(Player::getName)
                         .collect(Collectors.toSet());
             }
 
-            // <radius|strength> [<double>] [<player>]
-            if (sender.argEquals(0, "radius") || sender.argEquals(0, "strength")) return AnnoyingUtility.getOnlinePlayerNames();
+            // <radius|strength> [<number>] [<player>]
+            if (sender.argEquals(0, "radius", "strength")) return AnnoyingUtility.getOnlinePlayerNames();
+
+            // special [<special>] [<player>]
+            if (sender.argEquals(0, "special")) {
+                final SpecialForcefield special = SpecialForcefield.getSpecial(args[1]);
+                return getPlayerNames(options -> (options != null && options.special != special) || (options == null && plugin.config.defaultSpecial != special));
+            }
         }
 
         return null;
+    }
+
+    @NotNull
+    private Set<String> getPlayerNames(@NotNull Predicate<ForcefieldOptions> predicate) {
+        return Bukkit.getOnlinePlayers().stream()
+                .filter(player -> predicate.test(plugin.forcefields.get(player.getUniqueId())))
+                .map(Player::getName)
+                .collect(Collectors.toSet());
     }
 }

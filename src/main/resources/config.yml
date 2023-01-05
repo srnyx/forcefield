@@ -1,8 +1,41 @@
 # Default options for forcefields
 default:
+  # Whether the forcefield should be inverse (pull instead of push)
+  inverse: false
   # Whether mobs are affected by the forcefield
   mobs: false
   # The radius of the forcefield
   radius: 5
   # How strong the forcefield is
   strength: 0.5
+  # The special type of forcefield. https://github.com/srnyx/forcefield/wiki/Special-forcefields
+  special: NONE
+
+# List of entities that will/won't be affected by the forcefield (if player has mobs enabled)
+entity-blacklist:
+  # https://hub.spigotmc.org/javadocs/spigot/org/bukkit/entity/EntityType.html
+  list:
+    - ENDER_DRAGON
+    - WITHER
+
+  # Whether to treat the blacklist as a whitelist instead
+  treat-as-whitelist: false
+
+# DANGER! THE BLOCKS FEATURE IS EXTREMELY LAGGY AND GRIEFY (players can use it as a nuker)! IT'S HIGHLY RECOMMENDED TO **NOT** USE IT (it's just for fun)!
+# Config options for block forcefield. Extremely dangerous, use at your own risk, laggy and griefy (can be used as a nuker if not configured properly)!
+blocks:
+  # Whether the blocks forcefield can be used
+  enabled: false
+
+  # List of players that can use blocks forcefield
+  players:
+    - srnyx
+
+  # List of blocks that will/won't be affected by the forcefield (if player has blocks enabled)
+  blacklist:
+    # https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html
+    list:
+      - PUMPKIN
+
+    # Whether to treat the blacklist as a whitelist instead
+    treat-as-whitelist: true

@@ -77,7 +77,7 @@ key4: "KDR: %kdr==#.##%" # %kdr==number%
 # --- END PLACEHOLDER PARAMETERS --- #
 
 
-# This message can be used to test practically anything!
+# This message can be used to test practically anything! FOR PLUGIN DEVELOPERS!
 test: "%prefix%This is a test message!"
 
 # Messages for general plugin usage
@@ -90,7 +90,7 @@ plugin:
   splitters:
     # This is the splitter for the JSON components (see above). Default: "@@"
     json: "@@"
-    # This is the splitter for the placeholders. Default: "=="
+    # This is the splitter for the placeholders (see above). Default: "=="
     placeholder: "=="
 
 # Error messages when a player does something wrong
@@ -108,16 +108,26 @@ error:
 
 # Messages for /forcefield
 command:
+  reload: "%prefix%Plugin successfully reloaded!@@&a%command%@@%command%"
   toggle: # %state==boolean%
     self: "%prefix%You have &2%state==enabled//disabled%&a your forcefield@@&a%command%@@%command%"
     other: "%prefix%You have &2%state==enabled//disabled% %target%&a's forcefield@@&a%command%@@%command%" # %target%
+  inverse: # %state==boolean%
+    self: "%prefix%You have &2%state==enabled//disabled%&a your inverse forcefield@@&a%command%@@%command%"
+    other: "%prefix%You have &2%state==enabled//disabled% %target%&a's inverse forcefield@@&a%command%@@%command%" # %target%
   mobs: # %state==boolean%
     self: "%prefix%Your forcefield will &2%state==now//no longer%&a push mobs@@&a%command%@@%command%"
     other: "%prefix%&2%target%&a's forcefield will &2%state==now//no longer%&a push mobs@@&a%command%@@%command%" # %target%
+  blocks:
+    error: "%prefix%&cBlocks are disabled or you (or the target) can't use blocks!@@&c%command%@@%command%"
+    self: "%prefix%Your forcefield will &2%state==now//no longer%&a push blocks@@&a%command%@@%command%" # %state==boolean%
+    other: "%prefix%&2%target%&a's forcefield will &2%state==now//no longer%&a push blocks@@&a%command%@@%command%" # %state==boolean%, %target%
   radius: # %radius==number%
     self: "%prefix%You have set your forcefield radius to &2%radius%@@&a%command%@@%command%"
     other: "%prefix%You have set &2%target%&a's forcefield radius to &2%radius%@@&a%command%@@%command%" # %target%
   strength: # %strength==number%
     self: "%prefix%You have set your forcefield strength to &2%strength%@@&a%command%@@%command%"
     other: "%prefix%You have set &2%target%&a's forcefield strength to &2%strength%@@&a%command%@@%command%" # %target%
-  reload: "%prefix%Plugin successfully reloaded!@@&a%command%@@%command%"
+  special: # %special%
+    self: "%prefix%You have set your special forcefield to &2%special%@@&a%command%@@%command%"
+    other: "%prefix%You have set &2%target%&a's special forcefield to &2%special%@@&a%command%@@%command%" # %target%

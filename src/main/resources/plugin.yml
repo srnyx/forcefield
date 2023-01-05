@@ -6,6 +6,7 @@ website: https://srnyx.xyz
 
 main: xyz.srnyx.forcefield.ForceField
 version: ${version}
+api-version: 1.13
 
 commands:
   forcefield:
@@ -15,19 +16,28 @@ commands:
     permission: forcefield.command
 
 permissions:
+  forcefield.bypass:
+    description: Allows bypassing other players' forcefields
+  forcefield.others:
+    description: Allows using the commands on other players
+  forcefield.special.SPECIAL:
+    description: Allows using the specified special forcefield
   forcefield.command:
     description: Allows access to the base command
+  forcefield.command.reload:
+    description: Allows access to reload the plugin (config and player data)
   forcefield.command.toggle:
     description: Allows access to toggle the forcefield
+  forcefield.command.inverse:
+    description: Allows access to toggle the inverse forcefield
   forcefield.command.mobs:
     description: Allows access to toggle the forcefield for mobs
+  forcefield.command.blocks:
+    description: Allows access to toggle the forcefield for blocks (see config.yml for more info)
+    default: false
   forcefield.command.radius:
     description: Allows access to change the radius of the forcefield
   forcefield.command.strength:
     description: Allows access to change the strength of the forcefield
-  forcefield.command.reload:
-    description: Allows access to reload the plugin (config and player data)
-  forcefield.others:
-    description: Allows using the commands on other players
-  forcefield.bypass:
-    description: Allows bypassing other players' forcefields
+  forcefield.command.special:
+    description: Allows access to change the special forcefield type

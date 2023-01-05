@@ -1,13 +1,10 @@
 package xyz.srnyx.forcefield.listeners;
 
-import org.bukkit.Location;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.util.Vector;
 
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -15,9 +12,8 @@ import org.jetbrains.annotations.NotNull;
 import xyz.srnyx.annoyingapi.AnnoyingListener;
 
 import xyz.srnyx.forcefield.ForceField;
-import xyz.srnyx.forcefield.ForcefieldOptions;
-
-import java.util.List;
+import xyz.srnyx.forcefield.managers.ForcefieldManager;
+import xyz.srnyx.forcefield.objects.ForcefieldOptions;
 
 
 public class PlayerListener implements AnnoyingListener {
@@ -38,7 +34,7 @@ public class PlayerListener implements AnnoyingListener {
      */
     @EventHandler
     public void onPlayerJoin(@NotNull PlayerJoinEvent event) {
-        new ForcefieldOptions(plugin, event.getPlayer().getUniqueId());
+        new ForcefieldOptions(plugin, event.getPlayer());
     }
 
     /**
@@ -58,21 +54,12 @@ public class PlayerListener implements AnnoyingListener {
 
         // Get options
         final ForcefieldOptions options = plugin.forcefields.get(player.getUniqueId());
-        if (options == null || !options.getEnabled()) return;
+        if (options == null || !options.enabled) return;
+        final ForcefieldManager manager = new ForcefieldManager(plugin, player);
 
-        // Get nearby entities
-        final double radius = options.getRadius();
-        final List<Entity> entities = player.getNearbyEntities(radius, radius, radius);
-
-        // If mobs are disabled, remove non-players
-        if (!options.getMobs()) entities.removeIf(entity -> !(entity instanceof Player));
-
-        // Push entities away
-        final Location playerLocation = player.getLocation();
-        final double strength = options.getStrength();
-        entities.forEach(nearby -> {
-            final Vector vector = nearby.getLocation().subtract(playerLocation).toVector();
-            if (vector.getX() != 0 || vector.getY() != 0 || vector.getZ() != 0) nearby.setVelocity(vector.normalize().multiply(strength));
-        });
+        // Push entities
+        manager.pushEntities();
+        // Push blocks
+        if (options.blocks) manager.pushBlocks();
     }
 }

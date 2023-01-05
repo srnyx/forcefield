@@ -1,4 +1,4 @@
-version = "1.0.0"
+version = "1.1.0"
 group = "xyz.srnyx"
 
 plugins {
@@ -15,8 +15,7 @@ repositories {
 
 dependencies {
     compileOnly("org.spigotmc", "spigot-api", "1.11-R0.1-SNAPSHOT")
-	implementation("xyz.srnyx", "annoying-api", "2.0.2")
-    compileOnly("org.jetbrains:annotations:23.1.0")
+	implementation("xyz.srnyx", "annoying-api", "2.0.3")
 }
 
 tasks {

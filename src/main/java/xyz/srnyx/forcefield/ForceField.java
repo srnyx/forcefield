@@ -7,10 +7,11 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import xyz.srnyx.annoyingapi.AnnoyingPlugin;
-import xyz.srnyx.annoyingapi.file.AnnoyingResource;
 
 import xyz.srnyx.forcefield.commands.ForcefieldCommand;
 import xyz.srnyx.forcefield.listeners.PlayerListener;
+import xyz.srnyx.forcefield.objects.ForceFieldConfig;
+import xyz.srnyx.forcefield.objects.ForcefieldOptions;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,9 +19,7 @@ import java.util.UUID;
 
 
 public class ForceField extends AnnoyingPlugin {
-    public boolean defaultMobs;
-    public double defaultRadius;
-    public double defaultStrength;
+    @NotNull public ForceFieldConfig config = new ForceFieldConfig(this);
     @NotNull public final Map<UUID, ForcefieldOptions> forcefields = new HashMap<>();
 
     public ForceField() {
@@ -35,13 +34,15 @@ public class ForceField extends AnnoyingPlugin {
 
     @Override
     public void enable() {
-        // Load config
-        final AnnoyingResource config = new AnnoyingResource(this, "config.yml");
-        defaultMobs = config.getBoolean("default.mobs");
-        defaultRadius = config.getDouble("default.radius");
-        defaultStrength = config.getDouble("default.strength");
-        // Load data
-        Bukkit.getOnlinePlayers().forEach(player -> new ForcefieldOptions(this, player.getUniqueId()));
+        reload();
+    }
+
+    @Override
+    public void reload() {
+        // Load config and data
+        config = new ForceFieldConfig(this);
+        forcefields.clear();
+        Bukkit.getOnlinePlayers().forEach(player -> new ForcefieldOptions(this, player));
     }
 
     /**
@@ -54,7 +55,7 @@ public class ForceField extends AnnoyingPlugin {
     @NotNull
     public ForcefieldOptions getOptions(@NotNull Player player) {
         ForcefieldOptions options = forcefields.get(player.getUniqueId());
-        if (options == null) options = new ForcefieldOptions(this, player.getUniqueId());
+        if (options == null) options = new ForcefieldOptions(this, player);
         return options;
     }
 }
