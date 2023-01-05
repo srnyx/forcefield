@@ -12,7 +12,7 @@ Perfect for VIP players, such as content creators, or just for fun! *It's **SUPE
 - Push/pull players/mobs/blocks
 - Specify a custom radius/strength for your forcefield
 - [Special forcefield types for even more fun!](https://github.com/srnyx/forcefield/wiki/Special-forcefields)
-- And much more... see the [`config.yml`](src/main/resources/plugin.yml) and **[Commands](https://github.com/srnyx/forcefield/wiki/Commands-and-Permissions#commands)**
+- And much more... see the [`config.yml`](src/main/resources/config.yml) and **[Commands](https://github.com/srnyx/forcefield/wiki/Commands-and-Permissions#commands)**
 
 ## Download
 
