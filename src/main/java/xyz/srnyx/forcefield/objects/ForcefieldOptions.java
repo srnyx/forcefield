@@ -5,12 +5,15 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import xyz.srnyx.annoyingapi.AnnoyingMessage;
 import xyz.srnyx.annoyingapi.command.AnnoyingSender;
+import xyz.srnyx.annoyingapi.data.EntityData;
 import xyz.srnyx.annoyingapi.file.AnnoyingData;
+import xyz.srnyx.annoyingapi.file.AnnoyingFile;
+import xyz.srnyx.annoyingapi.message.AnnoyingMessage;
+import xyz.srnyx.annoyingapi.message.DefaultReplaceType;
 
 import xyz.srnyx.forcefield.ForceField;
-import xyz.srnyx.forcefield.enums.SpecialForcefield;
+import xyz.srnyx.forcefield.SpecialForcefield;
 
 
 /**
@@ -18,15 +21,15 @@ import xyz.srnyx.forcefield.enums.SpecialForcefield;
  */
 public class ForcefieldOptions {
     @NotNull private final ForceField plugin;
-    @NotNull private final AnnoyingData data;
+    @NotNull private final EntityData data;
     @NotNull private final Player player;
-    public boolean enabled;
-    public boolean inverse;
-    @Nullable public SpecialForcefield special;
-    public boolean mobs;
-    public boolean blocks;
-    public double radius;
-    public double strength;
+    private boolean enabled;
+    private boolean inverse;
+    @Nullable private SpecialForcefield special;
+    private boolean mobs;
+    private boolean blocks;
+    private double radius;
+    private double strength;
 
     /**
      * Creates a new {@link ForcefieldOptions} instance and adds it to {@link ForceField#forcefields}
@@ -36,20 +39,84 @@ public class ForcefieldOptions {
      */
     public ForcefieldOptions(@NotNull ForceField plugin, @NotNull Player player) {
         this.plugin = plugin;
-        this.data = new AnnoyingData(plugin, "players/" + player.getUniqueId() + ".yml", false);
+        data = new EntityData(plugin, player);
         this.player = player;
 
-        // Get options
-        this.enabled = data.get("enabled") != null && data.getBoolean("enabled");
-        this.inverse = data.get("inverse") != null ? data.getBoolean("inverse") : plugin.config.defaultInverse;
-        this.mobs = data.get("mobs") != null ? data.getBoolean("mobs") : plugin.config.defaultMobs;
-        this.blocks = data.get("blocks") != null && data.getBoolean("blocks");
-        this.special = data.get("special") != null ? SpecialForcefield.getSpecial(data.getString("special")) : plugin.config.defaultSpecial;
-        this.radius = data.get("radius") != null ? data.getDouble("radius") : plugin.config.defaultRadius;
-        this.strength = data.get("strength") != null ? data.getDouble("strength") : plugin.config.defaultStrength;
+        // Old data conversion
+        convertOldData();
 
-        // Add to map
-        plugin.forcefields.put(player.getUniqueId(), this);
+        // Get options
+        enabled = data.has("ff_enabled");
+        inverse = Boolean.parseBoolean(data.get("ff_inverse", String.valueOf(plugin.config.defaultInverse)));
+        mobs = Boolean.parseBoolean(data.get("ff_mobs", String.valueOf(plugin.config.defaultMobs)));
+        blocks = Boolean.parseBoolean(data.get("ff_blocks"));
+        final SpecialForcefield specialMatch = SpecialForcefield.matchSpecial(data.get("ff_special"));
+        special = specialMatch != null ? specialMatch : plugin.config.defaultSpecial;
+        try {
+            radius = Double.parseDouble(data.get("ff_radius", String.valueOf(plugin.config.defaultRadius)));
+        } catch (NumberFormatException e) {
+            radius = plugin.config.defaultRadius;
+        }
+        try {
+            strength = Double.parseDouble(data.get("ff_strength", String.valueOf(plugin.config.defaultStrength)));
+        } catch (NumberFormatException e) {
+            strength = plugin.config.defaultStrength;
+        }
+    }
+
+    /**
+     * @deprecated  Used to convert old data
+     */
+    private void convertOldData() {
+        final AnnoyingData oldData = new AnnoyingData(plugin, "players/" + player.getUniqueId() + ".yml", new AnnoyingFile.Options<>().canBeEmpty(false));
+        if (!oldData.file.exists()) return;
+
+        // enabled
+        if (oldData.contains("enabled")) {
+            if (oldData.getBoolean("enabled")) data.set("ff_enabled", true);
+            oldData.set("enabled", null);
+        }
+        // inverse
+        if (oldData.contains("inverse")) {
+            if (oldData.getBoolean("inverse")) data.set("ff_inverse", true);
+            oldData.set("inverse", null);
+        }
+        // mobs
+        if (oldData.contains("mobs")) {
+            if (oldData.getBoolean("mobs")) data.set("ff_mobs", true);
+            oldData.set("mobs", null);
+        }
+        // blocks
+        if (oldData.contains("blocks")) {
+            if (oldData.getBoolean("blocks")) data.set("ff_blocks", true);
+            oldData.set("blocks", null);
+        }
+        // special
+        if (oldData.contains("special")) {
+            final String specialString = oldData.getString("special");
+            if (specialString != null) data.set("ff_special", specialString);
+            oldData.set("special", null);
+
+        }
+        // radius
+        if (oldData.contains("radius")) {
+            final String radiusString = oldData.getString("radius");
+            if (radiusString != null) data.set("ff_radius", radiusString);
+            oldData.set("radius", null);
+        }
+        // strength
+        if (oldData.contains("strength")) {
+            final String strengthString = oldData.getString("strength");
+            if (strengthString != null) data.set("ff_strength", strengthString);
+            oldData.set("strength", null);
+        }
+
+        // Delete old data
+        oldData.delete();
+    }
+
+    public boolean enabled() {
+        return enabled;
     }
 
     /**
@@ -58,21 +125,25 @@ public class ForcefieldOptions {
      * @param   enabled the new value
      * @param   sender  the {@link AnnoyingSender} who's setting the value
      */
-    public void setEnabled(boolean enabled, @NotNull AnnoyingSender sender) {
+    public void enabled(boolean enabled, @NotNull AnnoyingSender sender) {
         this.enabled = enabled;
-        data.set("enabled", enabled, true);
+        data.set("ff_enabled", enabled);
 
         // Send message
-        if (sender.getCmdSender().equals(player)) {
+        if (sender.cmdSender.equals(player)) {
             new AnnoyingMessage(plugin, "command.toggle.self")
-                    .replace("%state%", enabled, AnnoyingMessage.DefaultReplaceType.BOOLEAN)
+                    .replace("%state%", enabled, DefaultReplaceType.BOOLEAN)
                     .send(sender);
-        } else {
-            new AnnoyingMessage(plugin, "command.toggle.other")
-                    .replace("%state%", enabled, AnnoyingMessage.DefaultReplaceType.BOOLEAN)
-                    .replace("%target%", player.getName())
-                    .send(sender);
+            return;
         }
+        new AnnoyingMessage(plugin, "command.toggle.other")
+                .replace("%state%", enabled, DefaultReplaceType.BOOLEAN)
+                .replace("%target%", player.getName())
+                .send(sender);
+    }
+
+    public boolean inverse() {
+        return inverse;
     }
 
     /**
@@ -81,21 +152,26 @@ public class ForcefieldOptions {
      * @param   inverse the new value
      * @param   sender  the {@link AnnoyingSender} who's setting the value
      */
-    public void setInverse(boolean inverse, @NotNull AnnoyingSender sender) {
+    public void inverse(boolean inverse, @NotNull AnnoyingSender sender) {
         this.inverse = inverse;
-        data.set("inverse", inverse, true);
+        data.set("ff_inverse", inverse);
 
         // Send message
-        if (sender.getCmdSender().equals(player)) {
+        if (sender.cmdSender.equals(player)) {
             new AnnoyingMessage(plugin, "command.inverse.self")
-                    .replace("%state%", inverse, AnnoyingMessage.DefaultReplaceType.BOOLEAN)
+                    .replace("%state%", inverse, DefaultReplaceType.BOOLEAN)
                     .send(sender);
-        } else {
-            new AnnoyingMessage(plugin, "command.inverse.other")
-                    .replace("%state%", inverse, AnnoyingMessage.DefaultReplaceType.BOOLEAN)
-                    .replace("%target%", player.getName())
-                    .send(sender);
+            return;
         }
+        new AnnoyingMessage(plugin, "command.inverse.other")
+                .replace("%state%", inverse, DefaultReplaceType.BOOLEAN)
+                .replace("%target%", player.getName())
+                .send(sender);
+    }
+
+    @Nullable
+    public SpecialForcefield special() {
+        return special;
     }
 
     /**
@@ -104,26 +180,30 @@ public class ForcefieldOptions {
      * @param   special the new value
      * @param   sender  the {@link AnnoyingSender} who's setting the value
      */
-    public void setSpecial(@Nullable String special, @NotNull AnnoyingSender sender) {
-        final SpecialForcefield specialEnum = SpecialForcefield.getSpecial(special);
+    public void special(@Nullable String special, @NotNull AnnoyingSender sender) {
+        final SpecialForcefield specialEnum = SpecialForcefield.matchSpecial(special);
         if (specialEnum != null && !sender.checkPermission("forcefield.special." + specialEnum.name().toLowerCase())) return;
 
         // Set blocks
         this.special = specialEnum;
-        data.set("special", specialEnum != null ? specialEnum.name() : null, true);
+        data.set("ff_special", specialEnum != null ? specialEnum.name() : null);
 
         // Send message
         final String name = SpecialForcefield.getName(specialEnum);
-        if (sender.getCmdSender().equals(player)) {
+        if (sender.cmdSender.equals(player)) {
             new AnnoyingMessage(plugin, "command.special.self")
                     .replace("%special%", name)
                     .send(sender);
-        } else {
-            new AnnoyingMessage(plugin, "command.special.other")
-                    .replace("%special%", name)
-                    .replace("%target%", player.getName())
-                    .send(sender);
+            return;
         }
+        new AnnoyingMessage(plugin, "command.special.other")
+                .replace("%special%", name)
+                .replace("%target%", player.getName())
+                .send(sender);
+    }
+
+    public boolean mobs() {
+        return mobs;
     }
 
     /**
@@ -132,21 +212,25 @@ public class ForcefieldOptions {
      * @param   mobs    the new value
      * @param   sender  the {@link AnnoyingSender} who's setting the value
      */
-    public void setMobs(boolean mobs, @NotNull AnnoyingSender sender) {
+    public void mobs(boolean mobs, @NotNull AnnoyingSender sender) {
         this.mobs = mobs;
-        data.set("mobs", mobs, true);
+        data.set("ff_mobs", mobs);
 
         // Send message
-        if (sender.getCmdSender().equals(player)) {
+        if (sender.cmdSender.equals(player)) {
             new AnnoyingMessage(plugin, "command.mobs.self")
-                    .replace("%state%", mobs, AnnoyingMessage.DefaultReplaceType.BOOLEAN)
+                    .replace("%state%", mobs, DefaultReplaceType.BOOLEAN)
                     .send(sender);
-        } else {
-            new AnnoyingMessage(plugin, "command.mobs.other")
-                    .replace("%state%", mobs, AnnoyingMessage.DefaultReplaceType.BOOLEAN)
-                    .replace("%target%", player.getName())
-                    .send(sender);
+            return;
         }
+        new AnnoyingMessage(plugin, "command.mobs.other")
+                .replace("%state%", mobs, DefaultReplaceType.BOOLEAN)
+                .replace("%target%", player.getName())
+                .send(sender);
+    }
+
+    public boolean blocks() {
+        return blocks;
     }
 
     /**
@@ -155,7 +239,7 @@ public class ForcefieldOptions {
      * @param   blocks  the new value
      * @param   sender  the {@link AnnoyingSender} who's setting the value
      */
-    public void setBlocks(boolean blocks, @NotNull AnnoyingSender sender) {
+    public void blocks(boolean blocks, @NotNull AnnoyingSender sender) {
         // Check if player has permission
         if (!sender.checkPermission("forcefield.command.blocks")) return;
 
@@ -167,19 +251,23 @@ public class ForcefieldOptions {
 
         // Set blocks
         this.blocks = blocks;
-        data.set("blocks", blocks, true);
+        data.set("ff_blocks", blocks);
 
         // Send message
-        if (sender.getCmdSender().equals(player)) {
+        if (sender.cmdSender.equals(player)) {
             new AnnoyingMessage(plugin, "command.blocks.self")
-                    .replace("%state%", blocks, AnnoyingMessage.DefaultReplaceType.BOOLEAN)
+                    .replace("%state%", blocks, DefaultReplaceType.BOOLEAN)
                     .send(sender);
-        } else {
-            new AnnoyingMessage(plugin, "command.blocks.other")
-                    .replace("%state%", blocks, AnnoyingMessage.DefaultReplaceType.BOOLEAN)
-                    .replace("%target%", player.getName())
-                    .send(sender);
+            return;
         }
+        new AnnoyingMessage(plugin, "command.blocks.other")
+                .replace("%state%", blocks, DefaultReplaceType.BOOLEAN)
+                .replace("%target%", player.getName())
+                .send(sender);
+    }
+
+    public double radius() {
+        return radius;
     }
 
     /**
@@ -188,32 +276,34 @@ public class ForcefieldOptions {
      * @param   radius  the new value
      * @param   sender  the {@link AnnoyingSender} who's setting the value
      */
-    public void setRadius(@NotNull String radius, @NotNull AnnoyingSender sender) {
+    public void radius(@NotNull String radius, @NotNull AnnoyingSender sender) {
         final double radiusDouble;
         try {
             radiusDouble = Double.parseDouble(radius);
         } catch (final NumberFormatException e) {
-            new AnnoyingMessage(plugin, "error.invalid-argument")
-                    .replace("%argument%", radius)
-                    .send(sender);
+            sender.invalidArgument(radius);
             return;
         }
 
         // Set radius
         this.radius = radiusDouble;
-        data.set("radius", radiusDouble, true);
+        data.set("ff_radius", radiusDouble);
 
         // Send message
-        if (sender.getCmdSender().equals(player)) {
+        if (sender.cmdSender.equals(player)) {
             new AnnoyingMessage(plugin, "command.radius.self")
-                    .replace("%radius%", radius, AnnoyingMessage.DefaultReplaceType.NUMBER)
+                    .replace("%radius%", radius, DefaultReplaceType.NUMBER)
                     .send(sender);
-        } else {
-            new AnnoyingMessage(plugin, "command.radius.other")
-                    .replace("%radius%", radius, AnnoyingMessage.DefaultReplaceType.NUMBER)
-                    .replace("%target%", player.getName())
-                    .send(sender);
+            return;
         }
+        new AnnoyingMessage(plugin, "command.radius.other")
+                .replace("%radius%", radius, DefaultReplaceType.NUMBER)
+                .replace("%target%", player.getName())
+                .send(sender);
+    }
+
+    public double strength() {
+        return strength;
     }
 
     /**
@@ -222,32 +312,30 @@ public class ForcefieldOptions {
      * @param   strength    the new value
      * @param   sender      the {@link AnnoyingSender} who's setting the value
      */
-    public void setStrength(@NotNull String strength, @NotNull AnnoyingSender sender) {
+    public void strength(@NotNull String strength, @NotNull AnnoyingSender sender) {
         final double strengthDouble;
         try {
             strengthDouble = Double.parseDouble(strength);
         } catch (final NumberFormatException e) {
-            new AnnoyingMessage(plugin, "error.invalid-argument")
-                    .replace("%argument%", strength)
-                    .send(sender);
+            sender.invalidArgument(strength);
             return;
         }
 
         // Set radius
         this.strength = strengthDouble;
-        data.set("strength", strengthDouble, true);
+        data.set("ff_strength", strengthDouble);
 
         // Send message
-        if (sender.getCmdSender().equals(player)) {
+        if (sender.cmdSender.equals(player)) {
             new AnnoyingMessage(plugin, "command.strength.self")
-                    .replace("%strength%", strength, AnnoyingMessage.DefaultReplaceType.NUMBER)
+                    .replace("%strength%", strength, DefaultReplaceType.NUMBER)
                     .send(sender);
-        } else {
-            new AnnoyingMessage(plugin, "command.strength.other")
-                    .replace("%strength%", strength, AnnoyingMessage.DefaultReplaceType.NUMBER)
-                    .replace("%target%", player.getName())
-                    .send(sender);
+            return;
         }
+        new AnnoyingMessage(plugin, "command.strength.other")
+                .replace("%strength%", strength, DefaultReplaceType.NUMBER)
+                .replace("%target%", player.getName())
+                .send(sender);
     }
 
     /**

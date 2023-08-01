@@ -6,26 +6,24 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import xyz.srnyx.annoyingapi.AnnoyingListener;
 
 import xyz.srnyx.forcefield.ForceField;
-import xyz.srnyx.forcefield.managers.ForcefieldManager;
+import xyz.srnyx.forcefield.ForcefieldManager;
 import xyz.srnyx.forcefield.objects.ForcefieldOptions;
 
 
 public class PlayerListener implements AnnoyingListener {
     @NotNull private final ForceField plugin;
 
-    @Contract(pure = true)
     public PlayerListener(@NotNull ForceField plugin) {
         this.plugin = plugin;
     }
 
     @Override @NotNull
-    public ForceField getPlugin() {
+    public ForceField getAnnoyingPlugin() {
         return plugin;
     }
 
@@ -34,7 +32,8 @@ public class PlayerListener implements AnnoyingListener {
      */
     @EventHandler
     public void onPlayerJoin(@NotNull PlayerJoinEvent event) {
-        new ForcefieldOptions(plugin, event.getPlayer());
+        final Player player = event.getPlayer();
+        plugin.forcefields.put(player.getUniqueId(), new ForcefieldOptions(plugin, player));
     }
 
     /**
@@ -54,12 +53,12 @@ public class PlayerListener implements AnnoyingListener {
 
         // Get options
         final ForcefieldOptions options = plugin.forcefields.get(player.getUniqueId());
-        if (options == null || !options.enabled) return;
+        if (options == null || !options.enabled()) return;
         final ForcefieldManager manager = new ForcefieldManager(plugin, player);
 
         // Push entities
         manager.pushEntities();
         // Push blocks
-        if (options.blocks) manager.pushBlocks();
+        if (options.blocks()) manager.pushBlocks();
     }
 }

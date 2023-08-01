@@ -1,18 +1,22 @@
 package xyz.srnyx.forcefield.objects;
 
 import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.EntityType;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import xyz.srnyx.annoyingapi.AnnoyingPlugin;
 import xyz.srnyx.annoyingapi.file.AnnoyingResource;
 
 import xyz.srnyx.forcefield.ForceField;
-import xyz.srnyx.forcefield.enums.SpecialForcefield;
+import xyz.srnyx.forcefield.SpecialForcefield;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 
@@ -38,26 +42,41 @@ public class ForceFieldConfig {
      * @param   plugin  the {@link ForceField} instance
      */
     public ForceFieldConfig(@NotNull ForceField plugin) {
-        final AnnoyingResource configFile = new AnnoyingResource(plugin, "config.yml");
+        final AnnoyingResource config = new AnnoyingResource(plugin, "config.yml");
 
-        defaultInverse = configFile.getBoolean("default.inverse");
-        defaultSpecial = SpecialForcefield.getSpecial(configFile.getString("default.tornado"));
-        defaultMobs = configFile.getBoolean("default.mobs");
-        defaultRadius = configFile.getDouble("default.radius");
-        defaultStrength = configFile.getDouble("default.strength");
+        final ConfigurationSection defaultSection = config.getConfigurationSection("default");
+        final boolean hasDefault = defaultSection != null;
+        defaultInverse = hasDefault && defaultSection.getBoolean("inverse", false);
+        defaultSpecial = hasDefault ? SpecialForcefield.matchSpecial(defaultSection.getString("tornado")) : null;
+        defaultMobs = hasDefault && defaultSection.getBoolean("mobs", false);
+        defaultRadius = hasDefault ? defaultSection.getDouble("radius", 5) : 5;
+        defaultStrength = hasDefault ? defaultSection.getDouble("strength", 0.5) : 0.5;
 
         // Entities
-        entityBlacklist = configFile.getStringList("entity-blacklist.list").stream()
-                .map(EntityType::valueOf)
-                .collect(Collectors.toSet());
-        entityBlacklistTreatAsWhitelist = configFile.getBoolean("entity-blacklist.treat-as-whitelist");
+        final ConfigurationSection entityBlacklistSection = config.getConfigurationSection("entity-blacklist");
+        final boolean hasEntityBlacklist = entityBlacklistSection != null;
+        entityBlacklist = hasEntityBlacklist ? entityBlacklistSection.getStringList("list").stream()
+                .map(string -> {
+                    try {
+                        return EntityType.valueOf(string.toUpperCase());
+                    } catch (final IllegalArgumentException e) {
+                        AnnoyingPlugin.log(Level.WARNING, "&eInvalid entity type for entity blacklist: &6" + string);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet()) : new HashSet<>();
+        entityBlacklistTreatAsWhitelist = hasEntityBlacklist && entityBlacklistSection.getBoolean("treat-as-whitelist", false);
 
         // Blocks
-        blocksEnabled = configFile.getBoolean("blocks.enabled");
-        blocksPlayers = new HashSet<>(configFile.getStringList("blocks.players"));
-        blocksBlacklist = configFile.getStringList("blocks.blacklist.list").stream()
-                .map(Material::valueOf)
-                .collect(Collectors.toSet());
-        blocksBlacklistTreatAsWhitelist = configFile.getBoolean("blocks.blacklist.treat-as-whitelist");
+        final ConfigurationSection blocksSection = config.getConfigurationSection("blocks");
+        final boolean hasBlocks = blocksSection != null;
+        blocksEnabled = hasBlocks && blocksSection.getBoolean("enabled");
+        blocksPlayers = hasBlocks ? new HashSet<>(blocksSection.getStringList("players")) : new HashSet<>();
+        blocksBlacklist = hasBlocks ? blocksSection.getStringList("blacklist.list").stream()
+                .map(Material::matchMaterial)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet()) : new HashSet<>();
+        blocksBlacklistTreatAsWhitelist = !hasBlocks || blocksSection.getBoolean("blacklist.treat-as-whitelist", true);
     }
 }

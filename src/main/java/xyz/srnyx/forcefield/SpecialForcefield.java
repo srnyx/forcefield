@@ -1,10 +1,9 @@
-package xyz.srnyx.forcefield.enums;
+package xyz.srnyx.forcefield;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.util.Vector;
 
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,7 +30,7 @@ public enum SpecialForcefield {
         if (inverse) inwardForce.multiply(-1);
         vector = perpendicular.add(inwardForce).setY(-y);
 
-        entity.setVelocity(vector.normalize().multiply(push.manager.options.strength));
+        entity.setVelocity(vector.normalize().multiply(push.manager.options.strength()));
     }),
     /**
      * Entities will be "held" in front of the player, {@code radius} blocks away. If {@code inverse} is {@code true}, entities will be "held" behind the player.
@@ -39,7 +38,7 @@ public enum SpecialForcefield {
     PICKUP(push -> {
         final Location location = push.location;
         location.add(0, 1.5, 0);
-        final Vector vector = location.getDirection().multiply(push.manager.options.radius - 1);
+        final Vector vector = location.getDirection().multiply(push.manager.options.radius() - 1);
         final Location newLocation = push.inverse ? location.subtract(vector) : location.add(vector);
         push.manager.pushEntity(push.entity, newLocation, null, true);
     });
@@ -54,7 +53,6 @@ public enum SpecialForcefield {
      *
      * @param   consumer    the {@link Consumer} that will be called when the {@link SpecialForcefield} is activated
      */
-    @Contract(pure = true)
     SpecialForcefield(@NotNull Consumer<EntityPush> consumer) {
         this.consumer = consumer;
     }
@@ -64,7 +62,7 @@ public enum SpecialForcefield {
      *
      * @return  the {@link #consumer}
      */
-    @NotNull @Contract(pure = true)
+    @NotNull
     public Consumer<EntityPush> getConsumer() {
         return consumer;
     }
@@ -76,8 +74,8 @@ public enum SpecialForcefield {
      *
      * @return          the {@link SpecialForcefield} with the given {@code name}, or {@code null} if the {@code name} is invalid
      */
-    @Nullable @Contract("null -> null")
-    public static SpecialForcefield getSpecial(@Nullable String name) {
+    @Nullable
+    public static SpecialForcefield matchSpecial(@Nullable String name) {
         if (name == null) return null;
         try {
             return SpecialForcefield.valueOf(name.toUpperCase());
@@ -93,9 +91,8 @@ public enum SpecialForcefield {
      *
      * @return          the name of the {@link SpecialForcefield}
      */
-    @NotNull @Contract(pure = true)
+    @NotNull
     public static String getName(@Nullable SpecialForcefield special) {
-        if (special == null) return "NONE";
-        return special.name();
+        return special == null ? "NONE" : special.name();
     }
 }

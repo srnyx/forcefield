@@ -1,15 +1,13 @@
 package xyz.srnyx.forcefield;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import org.jetbrains.annotations.NotNull;
 
 import xyz.srnyx.annoyingapi.AnnoyingPlugin;
+import xyz.srnyx.annoyingapi.PluginPlatform;
 
-import xyz.srnyx.forcefield.commands.ForcefieldCommand;
-import xyz.srnyx.forcefield.listeners.PlayerListener;
 import xyz.srnyx.forcefield.objects.ForceFieldConfig;
 import xyz.srnyx.forcefield.objects.ForcefieldOptions;
 
@@ -19,17 +17,21 @@ import java.util.UUID;
 
 
 public class ForceField extends AnnoyingPlugin {
-    @NotNull public ForceFieldConfig config = new ForceFieldConfig(this);
+    public ForceFieldConfig config;
     @NotNull public final Map<UUID, ForcefieldOptions> forcefields = new HashMap<>();
 
     public ForceField() {
-        super();
-
-        // Options
-        options.colorLight = ChatColor.GREEN;
-        options.colorDark = ChatColor.DARK_GREEN;
-        options.commands.add(new ForcefieldCommand(this));
-        options.listeners.add(new PlayerListener(this));
+        options
+                .pluginOptions(pluginOptions -> pluginOptions.updatePlatforms(
+                        PluginPlatform.modrinth("forcefield"),
+                        PluginPlatform.hangar(this, "srnyx"),
+                        PluginPlatform.spigot("107048")))
+                .bStatsOptions(bStatsOptions -> bStatsOptions.id(18869))
+                .registrationOptions
+                .automaticRegistration(automaticRegistration -> automaticRegistration.packages(
+                        "xyz.srnyx.forcefield.commands",
+                        "xyz.srnyx.forcefield.listeners"))
+                .papiExpansionToRegister(() -> new ForcefieldPlaceholders(this));
     }
 
     @Override
@@ -39,10 +41,9 @@ public class ForceField extends AnnoyingPlugin {
 
     @Override
     public void reload() {
-        // Load config and data
         config = new ForceFieldConfig(this);
         forcefields.clear();
-        Bukkit.getOnlinePlayers().forEach(player -> new ForcefieldOptions(this, player));
+        Bukkit.getOnlinePlayers().forEach(player -> forcefields.put(player.getUniqueId(), new ForcefieldOptions(this, player)));
     }
 
     /**
@@ -54,8 +55,10 @@ public class ForceField extends AnnoyingPlugin {
      */
     @NotNull
     public ForcefieldOptions getOptions(@NotNull Player player) {
-        ForcefieldOptions options = forcefields.get(player.getUniqueId());
-        if (options == null) options = new ForcefieldOptions(this, player);
-        return options;
+        final ForcefieldOptions options = forcefields.get(player.getUniqueId());
+        if (options != null) return options;
+        final ForcefieldOptions newOptions = new ForcefieldOptions(this, player);
+        forcefields.put(player.getUniqueId(), newOptions);
+        return newOptions;
     }
 }

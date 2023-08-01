@@ -1,4 +1,4 @@
-package xyz.srnyx.forcefield.managers;
+package xyz.srnyx.forcefield;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -8,15 +8,12 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Player;
-import org.bukkit.material.MaterialData;
 import org.bukkit.util.Vector;
 
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import xyz.srnyx.forcefield.ForceField;
-import xyz.srnyx.forcefield.enums.SpecialForcefield;
 import xyz.srnyx.forcefield.objects.EntityPush;
 import xyz.srnyx.forcefield.objects.ForcefieldOptions;
 
@@ -43,7 +40,7 @@ public class ForcefieldManager {
         this.plugin = plugin;
         this.player = player;
         this.options = plugin.forcefields.get(player.getUniqueId());
-        final double radius = options.radius == 0 ? 1 : options.radius - 1;
+        final double radius = options.radius() == 0 ? 1 : options.radius() - 1;
         this.inwardMultiple = -0.4 / radius;
     }
 
@@ -56,7 +53,7 @@ public class ForcefieldManager {
         if (entities == null || entities.isEmpty()) return;
 
         // Push entities away
-        entities.forEach(entity -> pushEntity(entity, player.getLocation(), options.special, options.inverse));
+        entities.forEach(entity -> pushEntity(entity, player.getLocation(), options.special(), options.inverse()));
     }
 
     /**
@@ -81,14 +78,14 @@ public class ForcefieldManager {
             if (predicate.test(blockLocation)) return;
 
             // Spawn falling block
-            final FallingBlock fallingBlock = world.spawnFallingBlock(blockLocation, new MaterialData(block.getType()));
+            final FallingBlock fallingBlock = world.spawnFallingBlock(blockLocation, block.getType(), (byte) 0);
 
             // Set properties
             fallingBlock.setDropItem(false);
             fallingBlock.setHurtEntities(false);
 
             // Set velocity
-            pushEntity(fallingBlock, player.getLocation(), options.special, options.inverse);
+            pushEntity(fallingBlock, player.getLocation(), options.special(), options.inverse());
 
             // Remove source block
             block.setType(Material.AIR);
@@ -108,7 +105,7 @@ public class ForcefieldManager {
         if (special == null) {
             final Vector vector = entity.getLocation().subtract(location).toVector();
             if (inverse) vector.multiply(-1);
-            entity.setVelocity(vector.normalize().multiply(options.strength));
+            entity.setVelocity(vector.normalize().multiply(options.strength()));
             return;
         }
 
@@ -124,25 +121,26 @@ public class ForcefieldManager {
     @Nullable
     public Set<Entity> getNearbyEntities() {
         // Variables
-        final boolean mobs = options.mobs;
+        final boolean mobs = options.mobs();
         final Set<EntityType> blacklist = plugin.config.entityBlacklist;
         final boolean treatAsWhiteList = plugin.config.entityBlacklistTreatAsWhitelist;
         if (mobs && treatAsWhiteList && blacklist.isEmpty()) return null;
 
         // Get nearby entities
-        final double radius = options.radius;
+        final double radius = options.radius();
         final List<Entity> entities = player.getNearbyEntities(radius, radius, radius);
         if (entities.isEmpty() || (treatAsWhiteList && blacklist.isEmpty())) return null;
 
         // Mobs option and blacklist/whitelist
         final Predicate<Location> predicate = getPredicate();
         entities.removeIf(entity -> {
-            if (entity.getType().equals(EntityType.PLAYER)) {
+            final EntityType type = entity.getType();
+            if (type.equals(EntityType.PLAYER)) {
                 if (entity.hasPermission("forcefield.bypass")) return true; // remove players with bypass permission
             } else if (!mobs) return true; // remove non-players (mobs) if mobs option is false
             if (predicate.test(entity.getLocation()) || entity.hasMetadata("NPC")) return true; // prevent "x not finite" error and remove NPCs
-            if (treatAsWhiteList) return !blacklist.contains(entity.getType()); // remove entities not in whitelist
-            return blacklist.contains(entity.getType()); // remove entities in blacklist
+            if (treatAsWhiteList) return !blacklist.contains(type); // remove entities not in whitelist
+            return blacklist.contains(type); // remove entities in blacklist
         });
 
         // Return entities
@@ -175,7 +173,7 @@ public class ForcefieldManager {
         // Get nearby blocks
         final Set<Block> blocks = new HashSet<>();
         final Location location = player.getLocation();
-        final int radius = (int) options.radius;
+        final int radius = (int) options.radius();
         for (int x = location.getBlockX() - radius; x <= location.getBlockX() + radius; x++) {
             for (int y = location.getBlockY() - radius; y <= location.getBlockY() + radius; y++) {
                 for (int z = location.getBlockZ() - radius; z <= location.getBlockZ() + radius; z++) {
