@@ -49,7 +49,7 @@ public class ForcefieldOptions {
         enabled = data.has("ff_enabled");
         inverse = Boolean.parseBoolean(data.get("ff_inverse", String.valueOf(plugin.config.defaultInverse)));
         mobs = Boolean.parseBoolean(data.get("ff_mobs", String.valueOf(plugin.config.defaultMobs)));
-        blocks = Boolean.parseBoolean(data.get("ff_blocks"));
+        blocks = data.has("ff_blocks");
         final SpecialForcefield specialMatch = SpecialForcefield.matchSpecial(data.get("ff_special"));
         special = specialMatch != null ? specialMatch : plugin.config.defaultSpecial;
         try {
@@ -127,7 +127,7 @@ public class ForcefieldOptions {
      */
     public void enabled(boolean enabled, @NotNull AnnoyingSender sender) {
         this.enabled = enabled;
-        data.set("ff_enabled", enabled);
+        data.set("ff_enabled", enabled ? true : null);
 
         // Send message
         if (sender.cmdSender.equals(player)) {
@@ -251,7 +251,7 @@ public class ForcefieldOptions {
 
         // Set blocks
         this.blocks = blocks;
-        data.set("ff_blocks", blocks);
+        data.set("ff_blocks", blocks ? true : null);
 
         // Send message
         if (sender.cmdSender.equals(player)) {
