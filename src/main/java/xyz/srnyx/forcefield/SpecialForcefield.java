@@ -9,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
 
 import xyz.srnyx.forcefield.objects.EntityPush;
 
+import java.util.Optional;
 import java.util.function.Consumer;
 
 
@@ -30,7 +31,7 @@ public enum SpecialForcefield {
         if (inverse) inwardForce.multiply(-1);
         vector = perpendicular.add(inwardForce).setY(-y);
 
-        entity.setVelocity(vector.normalize().multiply(push.manager.options.strength()));
+        entity.setVelocity(vector.normalize().multiply(push.manager.options.strength));
     }),
     /**
      * Entities will be "held" in front of the player, {@code radius} blocks away. If {@code inverse} is {@code true}, entities will be "held" behind the player.
@@ -38,7 +39,7 @@ public enum SpecialForcefield {
     PICKUP(push -> {
         final Location location = push.location;
         location.add(0, 1.5, 0);
-        final Vector vector = location.getDirection().multiply(push.manager.options.radius() - 1);
+        final Vector vector = location.getDirection().multiply(push.manager.options.radius - 1);
         final Location newLocation = push.inverse ? location.subtract(vector) : location.add(vector);
         push.manager.pushEntity(push.entity, newLocation, null, true);
     });
@@ -74,25 +75,13 @@ public enum SpecialForcefield {
      *
      * @return          the {@link SpecialForcefield} with the given {@code name}, or {@code null} if the {@code name} is invalid
      */
-    @Nullable
-    public static SpecialForcefield matchSpecial(@Nullable String name) {
-        if (name == null) return null;
-        try {
-            return SpecialForcefield.valueOf(name.toUpperCase());
-        } catch (final IllegalArgumentException e) {
-            return null;
-        }
-    }
-
-    /**
-     * Gets the name of the {@link SpecialForcefield}
-     *
-     * @param   special the {@link SpecialForcefield}
-     *
-     * @return          the name of the {@link SpecialForcefield}
-     */
     @NotNull
-    public static String getName(@Nullable SpecialForcefield special) {
-        return special == null ? "NONE" : special.name();
+    public static Optional<SpecialForcefield> matchSpecial(@Nullable String name) {
+        if (name == null) return Optional.empty();
+        try {
+            return Optional.of(SpecialForcefield.valueOf(name.toUpperCase()));
+        } catch (final IllegalArgumentException e) {
+            return Optional.empty();
+        }
     }
 }

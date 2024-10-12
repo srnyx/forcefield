@@ -1,6 +1,7 @@
 package xyz.srnyx.forcefield.commands;
 
 import org.bukkit.Bukkit;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import org.jetbrains.annotations.NotNull;
@@ -9,6 +10,7 @@ import org.jetbrains.annotations.Nullable;
 import xyz.srnyx.annoyingapi.message.AnnoyingMessage;
 import xyz.srnyx.annoyingapi.command.AnnoyingCommand;
 import xyz.srnyx.annoyingapi.command.AnnoyingSender;
+import xyz.srnyx.annoyingapi.message.DefaultReplaceType;
 import xyz.srnyx.annoyingapi.utility.BukkitUtility;
 
 import xyz.srnyx.forcefield.ForceField;
@@ -16,11 +18,9 @@ import xyz.srnyx.forcefield.SpecialForcefield;
 import xyz.srnyx.forcefield.objects.ForcefieldOptions;
 
 import java.util.*;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 
-public class ForcefieldCommand implements AnnoyingCommand {
+public class ForcefieldCommand extends AnnoyingCommand {
     @NotNull private final ForceField plugin;
 
     public ForcefieldCommand(@NotNull ForceField plugin) {
@@ -42,193 +42,218 @@ public class ForcefieldCommand implements AnnoyingCommand {
         final String[] args = sender.args;
 
         // No arguments (toggle)
-        if (args.length == 0 && sender.checkPlayer() && sender.checkPermission("forcefield.command.toggle")) {
+        if (args.length == 0) {
+            if (!sender.checkPlayer() || !sender.checkPermission("forcefield.command.toggle")) return;
             final ForcefieldOptions options = plugin.getOptions(sender.getPlayer());
-            options.enabled(!options.enabled(), sender);
+            options.enabled(!options.enabled, sender);
             return;
         }
 
-        // <reload|toggle|inverse|mobs|blocks>
-        if (args.length == 1) {
-            // reload
-            if (sender.argEquals(0, "reload") && sender.checkPermission("forcefield.command.reload")) {
-                plugin.reloadPlugin();
-                new AnnoyingMessage(plugin, "command.reload").send(sender);
+        // reload
+        if (sender.argEquals(0, "reload")) {
+            if (!sender.checkPermission("forcefield.command.reload")) return;
+            plugin.reloadPlugin();
+            new AnnoyingMessage(plugin, "command.reload").send(sender);
+            return;
+        }
+
+        // get
+        if (sender.argEquals(0, "get")) {
+            // No option specified (toggle)
+            if (args.length == 1) {
+                if (!sender.checkPlayer() || !sender.checkPermission("forcefield.command.toggle")) return;
+                final Player player = sender.getPlayer();
+                new AnnoyingMessage(plugin, "command.toggle.get")
+                        .replace("%target%", player.getName())
+                        .replace("%state%", plugin.getOptions(player).enabled, DefaultReplaceType.BOOLEAN)
+                        .send(sender);
                 return;
             }
 
-            // <toggle|inverse|mobs|blocks>
-            if (sender.checkPlayer()) {
-                final Player player = sender.getPlayer();
-                final ForcefieldOptions options = plugin.getOptions(player);
+            // Check permission
+            final String option = args[1].toLowerCase();
+            if (!sender.checkPermission("forcefield.command." + option)) return;
 
-                // toggle
-                if (sender.argEquals(0, "toggle") && sender.checkPermission("forcefield.command.toggle")) {
-                    options.enabled(!options.enabled(), sender);
+            // Get target
+            final Player target;
+            if (args.length == 3) {
+                if (!sender.checkPermission("forcefield.others")) return;
+                target = Bukkit.getPlayer(args[2]);
+                if (target == null) {
+                    sender.invalidArgument(args[2]);
                     return;
                 }
-
-                // inverse
-                if (sender.argEquals(0, "inverse") && sender.checkPermission("forcefield.command.inverse")) {
-                    options.inverse(!options.inverse(), sender);
-                    return;
-                }
-
-                // mobs
-                if (sender.argEquals(0, "mobs") && sender.checkPermission("forcefield.command.mobs")) {
-                    options.mobs(!options.mobs(), sender);
-                    return;
-                }
-
-                // blocks
-                if (sender.argEquals(0, "blocks")) {
-                    options.blocks(!options.blocks(), sender);
-                    return;
-                }
+            } else if (sender.checkPlayer()) {
+                target = sender.getPlayer();
+            } else {
+                return;
             }
-        }
+            final String name = target.getName();
+            final ForcefieldOptions options = plugin.getOptions(target);
 
-        // <toggle|inverse|mobs|blocks> <on|off> [<player>], <radius|strength> [<number>] [<player>], special [<special>] [<player>]
-        if (args.length < 2) {
+            switch (option) {
+                // toggle
+                case "toggle":
+                    new AnnoyingMessage(plugin, "command.toggle.get")
+                            .replace("%target%", name)
+                            .replace("%state%", options.enabled, DefaultReplaceType.BOOLEAN)
+                            .send(sender);
+                    return;
+                // inverse
+                case "inverse":
+                    new AnnoyingMessage(plugin, "command.inverse.get")
+                            .replace("%target%", name)
+                            .replace("%state%", options.inverse, DefaultReplaceType.BOOLEAN)
+                            .send(sender);
+                    return;
+                // mobs
+                case "mobs":
+                    new AnnoyingMessage(plugin, "command.mobs.get")
+                            .replace("%target%", name)
+                            .replace("%state%", options.mobs, DefaultReplaceType.BOOLEAN)
+                            .send(sender);
+                    return;
+                // blocks
+                case "blocks":
+                    new AnnoyingMessage(plugin, "command.blocks.get")
+                            .replace("%target%", name)
+                            .replace("%state%", options.blocks, DefaultReplaceType.BOOLEAN)
+                            .send(sender);
+                    return;
+                // radius
+                case "radius":
+                    new AnnoyingMessage(plugin, "command.radius.get")
+                            .replace("%target%", name)
+                            .replace("%radius%", options.radius, DefaultReplaceType.NUMBER)
+                            .send(sender);
+                    return;
+                // strength
+                case "strength":
+                    new AnnoyingMessage(plugin, "command.strength.get")
+                            .replace("%target%", name)
+                            .replace("%strength%", options.strength, DefaultReplaceType.NUMBER)
+                            .send(sender);
+                    return;
+                // special
+                case "special":
+                    new AnnoyingMessage(plugin, "command.special.get")
+                            .replace("%target%", name)
+                            .replace("%special%", options.getSpecialName())
+                            .send(sender);
+                    return;
+            }
+
             sender.invalidArguments();
             return;
         }
-        final Player player;
-        if (args.length == 3 && sender.checkPermission("forcefield.command.other")) {
-            player = Bukkit.getPlayer(args[2]);
-            if (player == null) {
-                sender.invalidArgument(args[2]);
+
+        // set
+        if (sender.argEquals(0, "set")) {
+            // Check permission
+            final String option = args[1].toLowerCase();
+            if (!sender.checkPermission("forcefield.command." + option)) return;
+
+            // Get target
+            final Player target;
+            if (args.length == 4 && sender.checkPermission("forcefield.others")) {
+                target = Bukkit.getPlayer(args[3]);
+                if (target == null) {
+                    sender.invalidArgument(args[3]);
+                    return;
+                }
+            } else if (sender.checkPlayer()) {
+                target = sender.getPlayer();
+            } else {
                 return;
             }
-        } else if (sender.checkPlayer()) {
-            player = sender.getPlayer();
-        } else return;
-        final ForcefieldOptions options = plugin.getOptions(player);
+            final ForcefieldOptions options = plugin.getOptions(target);
 
-        // toggle <on|off> [<player>]
-        if (sender.argEquals(0, "toggle") && sender.checkPermission("forcefield.command.toggle")) {
-            options.enabled(sender.argEquals(1, "on"), sender);
-            return;
+            switch (option) {
+                // toggle
+                case "toggle":
+                    options.enabled(sender.argEquals(2, "on"), sender);
+                    return;
+                // inverse
+                case "inverse":
+                    options.inverse(sender.argEquals(2, "on"), sender);
+                    return;
+                // mobs
+                case "mobs":
+                    options.mobs(sender.argEquals(2, "on"), sender);
+                    return;
+                // blocks
+                case "blocks":
+                    options.blocks(sender.argEquals(2, "on"), sender);
+                    return;
+                // radius
+                case "radius":
+                    options.radius(args[2], sender);
+                    return;
+                // strength
+                case "strength":
+                    options.strength(args[2], sender);
+                    return;
+                // special
+                case "special":
+                    options.special(args[2], sender);
+                    return;
+            }
         }
 
-        // inverse <on|off> [<player>]
-        if (sender.argEquals(0, "inverse") && sender.checkPermission("forcefield.command.inverse")) {
-            options.inverse(sender.argEquals(1, "on"), sender);
-            return;
-        }
-
-        // mobs <on|off> [<player>]
-        if (sender.argEquals(0, "mobs") && sender.checkPermission("forcefield.command.mobs")) {
-            options.mobs(sender.argEquals(1, "on"), sender);
-            return;
-        }
-
-        // blocks <on|off> [<player>]
-        if (sender.argEquals(0, "blocks")) {
-            options.blocks(sender.argEquals(1, "on"), sender);
-            return;
-        }
-
-        // radius [<number>] [<player>]
-        if (sender.argEquals(0, "radius") && sender.checkPermission("forcefield.command.radius")) {
-            options.radius(args[1], sender);
-            return;
-        }
-
-        // strength [<number>] [<player>]
-        if (sender.argEquals(0, "strength") && sender.checkPermission("forcefield.command.strength")) {
-            options.strength(args[1], sender);
-            return;
-        }
-
-        // special [<special>] [<player>]
-        if (sender.argEquals(0, "special") && sender.checkPermission("forcefield.command.special")) options.special(args[1], sender);
+        sender.invalidArguments();
+    }
+    
+    @NotNull private static final Set<String> SPECIAL = new HashSet<>();
+    static {
+        SPECIAL.add("NONE");
+        for (final SpecialForcefield special : SpecialForcefield.values()) SPECIAL.add(special.name());
     }
 
     @Override @Nullable
     public Collection<String> onTabComplete(@NotNull AnnoyingSender sender) {
+        final CommandSender cmdSender = sender.cmdSender;
         final String[] args = sender.args;
 
-        // <reload|toggle|inverse|special|mobs|blocks|radius|strength>
-        if (args.length == 1) return Arrays.asList("reload", "toggle", "inverse", "mobs", "blocks", "radius", "strength", "special");
+        // <reload|get|set>
+        if (args.length == 1) {
+            final Set<String> options = new HashSet<>(Arrays.asList("get", "set"));
+            if (cmdSender.hasPermission("forcefield.command.reload")) options.add("reload");
+            return options;
+        }
 
-        // <toggle|inverse|mobs|blocks> <on|off>, <radius|strength> [<number>], special [<special>]
+        // <get|set> <toggle|inverse|mobs|blocks|radius|strength|special>
         if (args.length == 2) {
-            // <toggle|inverse|mobs|blocks> <on|off>
-            if (sender.argEquals(0, "toggle", "inverse", "mobs", "blocks")) return Arrays.asList("on", "off");
-            // <radius|strength> [<number>]
-            if (sender.argEquals(0, "radius", "strength")) return Collections.singleton("[<number>]");
-            // special [<special>]
-            if (sender.argEquals(0, "special")) {
-                final Set<String> completions = new HashSet<>();
-                completions.add("NONE");
-                for (final SpecialForcefield special : SpecialForcefield.values()) completions.add(special.name());
-                return completions;
-            }
+            final Set<String> options = new HashSet<>(Arrays.asList("toggle", "inverse", "mobs", "blocks", "radius", "strength", "special"));
+            options.removeIf(option -> !cmdSender.hasPermission("forcefield.command." + option));
+            return options;
         }
 
-        // <toggle|inverse|mobs|blocks> <on|off> [<player>], <radius|strength> [<number>] [<player>], special [<special>] [<player>]
+        // <get|set> <toggle|inverse|mobs|blocks|radius|strength|special> [...]
         if (args.length == 3) {
-            // toggle <on|off> [<player>]
-            if (sender.argEquals(0, "toggle")) {
-                // toggle on [<player>]
-                if (sender.argEquals(1, "on")) return getPlayerNames(options -> options == null || !options.enabled());
-                // toggle off [<player>]
-                if (sender.argEquals(1, "off")) return plugin.forcefields.entrySet().stream()
-                        .filter(entry -> entry.getValue().enabled())
-                        .map(entry -> Bukkit.getPlayer(entry.getKey()))
-                        .filter(Objects::nonNull)
-                        .map(Player::getName)
-                        .collect(Collectors.toSet());
+            // get
+            if (sender.argEquals(0, "get")) {
+                if (sender.argEquals(1, "toggle", "inverse", "mobs", "blocks", "radius", "strength", "special") && sender.cmdSender.hasPermission("forcefield.others")) return BukkitUtility.getOnlinePlayerNames();
+                return null;
             }
 
-            // inverse <on|off> [<player>]
-            if (sender.argEquals(0, "inverse")) {
-                // inverse on [<player>]
-                if (sender.argEquals(1, "on")) return getPlayerNames(options -> (options != null && !options.inverse()) || (options == null && !plugin.config.defaultInverse));
-                // inverse off [<player>]
-                if (sender.argEquals(1, "off")) return getPlayerNames(options -> (options != null && options.inverse()) || (options == null && plugin.config.defaultInverse));
-            }
+            // set
+            if (sender.argEquals(0, "set")) {
+                // <toggle|inverse|mobs|blocks> <on|off>
+                if (sender.argEquals(1, "toggle", "inverse", "mobs", "blocks")) return Arrays.asList("on", "off");
 
-            // mobs <on|off> [<player>]
-            if (sender.argEquals(0, "mobs")) {
-                // mobs on [<player>]
-                if (sender.argEquals(1, "on")) return getPlayerNames(options -> (options != null && !options.mobs()) || (options == null && !plugin.config.defaultMobs));
-                // mobs off [<player>]
-                if (sender.argEquals(1, "off")) return getPlayerNames(options -> (options != null && options.mobs()) || (options == null && plugin.config.defaultMobs));
-            }
+                // <radius|strength> [<number>]
+                if (sender.argEquals(1, "radius", "strength")) return Collections.singleton("[<number>]");
 
-            // blocks <on|off> [<player>]
-            if (sender.argEquals(0, "blocks")) {
-                // blocks on [<player>]
-                if (sender.argEquals(1, "on")) return getPlayerNames(options -> options == null || !options.blocks());
-                // blocks off [<player>]
-                if (sender.argEquals(1, "off")) return plugin.forcefields.entrySet().stream()
-                        .filter(entry -> entry.getValue().blocks())
-                        .map(entry -> Bukkit.getPlayer(entry.getKey()))
-                        .filter(Objects::nonNull)
-                        .map(Player::getName)
-                        .collect(Collectors.toSet());
-            }
+                // special [<special>]
+                if (sender.argEquals(1, "special")) return SPECIAL;
 
-            // <radius|strength> [<number>] [<player>]
-            if (sender.argEquals(0, "radius", "strength")) return BukkitUtility.getOnlinePlayerNames();
-
-            // special [<special>] [<player>]
-            if (sender.argEquals(0, "special")) {
-                final SpecialForcefield special = SpecialForcefield.matchSpecial(args[1]);
-                return getPlayerNames(options -> (options != null && options.special() != special) || (options == null && plugin.config.defaultSpecial != special));
+                return null;
             }
         }
+
+        // set <toggle|inverse|mobs|blocks|radius|strength|special> [...] [<player>]
+        if (args.length == 4 && sender.argEquals(0, "set") && cmdSender.hasPermission("forcefield.others")) return BukkitUtility.getOnlinePlayerNames();
 
         return null;
-    }
-
-    @NotNull
-    private Set<String> getPlayerNames(@NotNull Predicate<ForcefieldOptions> predicate) {
-        return Bukkit.getOnlinePlayers().stream()
-                .filter(player -> predicate.test(plugin.forcefields.get(player.getUniqueId())))
-                .map(Player::getName)
-                .collect(Collectors.toSet());
     }
 }

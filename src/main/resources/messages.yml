@@ -40,31 +40,31 @@ error:
 command:
   reload: "%prefix%Plugin successfully reloaded@@%p%%command%@@%command%"
 
-  toggle: # %state==boolean%
-    self: "%prefix%You have %s%%state==enabled//disabled%%p% your forcefield@@%p%%command%@@%command%"
-    other: "%prefix%You have %s%%state==enabled//disabled% %target%%p%'s forcefield@@%p%%command%@@%command%" # %target%
+  toggle: # %target%, %state==boolean%
+    get: "%prefix%%s%%target%%p%'s forcefield is %s%%state==enabled//disabled%%p%@@%p%%command%@@%command%"
+    set: "%prefix%You have %s%%state==enabled//disabled% %target%%p%'s forcefield@@%p%%command%@@%command%"
 
-  inverse: # %state==boolean%
-    self: "%prefix%You have %s%%state==enabled//disabled%%p% your inverse forcefield@@%p%%command%@@%command%"
-    other: "%prefix%You have %s%%state==enabled//disabled% %target%%p%'s inverse forcefield@@%p%%command%@@%command%" # %target%
+  inverse: # %target%, %state==boolean%
+    get: "%prefix%%s%%target%%p%'s forcefield %s%%state==is//is not%%p% inverted@@%p%%command%@@%command%"
+    set: "%prefix%%s%%target%%p%'s forcefield is %s%%state==now//no longer%%p% inverted@@%p%%command%@@%command%"
 
-  mobs: # %state==boolean%
-    self: "%prefix%Your forcefield will %s%%state==now//no longer%%p% push mobs@@%p%%command%@@%command%"
-    other: "%prefix%%s%%target%%p%'s forcefield will %s%%state==now//no longer%%p% push mobs@@%p%%command%@@%command%" # %target%
+  mobs: # %target%, %state==boolean%
+    get: "%prefix%%s%%target%%p%'s forcefield %s%%state==does//does not%%p% push mobs@@%p%%command%@@%command%"
+    set: "%prefix%%s%%target%%p%'s forcefield will %s%%state==now//no longer%%p% push mobs@@%p%%command%@@%command%"
 
-  blocks:
-    error: "%prefix%&cBlocks are disabled or you (or the target) can't use blocks!@@&c%command%@@%command%"
-    self: "%prefix%Your forcefield will %s%%state==now//no longer%%p% push blocks@@%p%%command%@@%command%" # %state==boolean%
-    other: "%prefix%%s%%target%%p%'s forcefield will %s%%state==now//no longer%%p% push blocks@@%p%%command%@@%command%" # %state==boolean%, %target%
+  blocks: # %target%
+    get: "%prefix%%s%%target%%p%'s forcefield %s%%state==does//does not%%p% push blocks@@%p%%command%@@%command%"
+    set: "%prefix%%s%%target%%p%'s forcefield will %s%%state==now//no longer%%p% push blocks@@%p%%command%@@%command%" # %state==boolean%
+    error: "%prefix%%pe%Blocks are disabled or %se%%target%%pe% can't use blocks!@@%pe%%command%@@%command%"
 
-  radius: # %radius==number%
-    self: "%prefix%You have set your forcefield radius to %s%%radius%@@%p%%command%@@%command%"
-    other: "%prefix%You have set %s%%target%%p%'s forcefield radius to %s%%radius%@@%p%%command%@@%command%" # %target%
+  radius: # %target%, %radius==number%
+    get: "%prefix%%s%%target%%p%'s forcefield radius is %s%%radius%%p%@@%p%%command%@@%command%"
+    set: "%prefix%Set %s%%target%%p%'s forcefield radius to %s%%radius%@@%p%%command%@@%command%"
 
-  strength: # %strength==number%
-    self: "%prefix%You have set your forcefield strength to %s%%strength%@@%p%%command%@@%command%"
-    other: "%prefix%You have set %s%%target%%p%'s forcefield strength to %s%%strength%@@%p%%command%@@%command%" # %target%
+  strength: # %target%, %strength==number%
+    get: "%prefix%%s%%target%%p%'s forcefield strength is %s%%strength%%p%@@%p%%command%@@%command%"
+    set: "%prefix%Set %s%%target%%p%'s forcefield strength to %s%%strength%@@%p%%command%@@%command%"
 
-  special: # %special%
-    self: "%prefix%You have set your special forcefield to %s%%special%@@%p%%command%@@%command%"
-    other: "%prefix%You have set %s%%target%%p%'s special forcefield to %s%%special%@@%p%%command%@@%command%" # %target%
+  special: # %target%, %special%
+    get: "%prefix%%s%%target%%p%'s special forcefield is %s%%special%%p%@@%p%%command%@@%command%"
+    set: "%prefix%Set %s%%target%%p%'s special forcefield to %s%%special%@@%p%%command%@@%command%"

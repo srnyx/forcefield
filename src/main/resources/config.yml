@@ -11,6 +11,12 @@ default:
   # The special type of forcefield. https://github.com/srnyx/forcefield/wiki/Special-forcefields
   special: NONE
 
+# Options related to the forcefield affecting mobs
+mobs:
+  # Whether mobs need to be in the line-of-sight to be affected by the forcefield
+  # This doesn't mean you need to look at them / see them, just that they aren't hidden behind blocks or similar
+  require-eyesight: true
+
 # List of entities that will/won't be affected by the forcefield (if player has mobs enabled)
 entity-blacklist:
   # https://hub.spigotmc.org/javadocs/spigot/org/bukkit/entity/EntityType.html

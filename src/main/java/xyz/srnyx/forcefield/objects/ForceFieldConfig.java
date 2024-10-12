@@ -24,59 +24,112 @@ import java.util.stream.Collectors;
  * Represents the plugin's {@code config.yml}
  */
 public class ForceFieldConfig {
-    public final boolean defaultInverse;
-    @Nullable public final SpecialForcefield defaultSpecial;
-    public final boolean defaultMobs;
-    public final double defaultRadius;
-    public final double defaultStrength;
-    @NotNull public final Set<EntityType> entityBlacklist;
-    public final boolean entityBlacklistTreatAsWhitelist;
-    public final boolean blocksEnabled;
-    @NotNull public final Set<String> blocksPlayers;
-    @NotNull public final Set<Material> blocksBlacklist;
-    public final boolean blocksBlacklistTreatAsWhitelist;
+    @NotNull public final Default defaults;
+    @NotNull public final Mobs mobs;
+    @NotNull public final EntityBlacklist entityBlacklist;
+    @NotNull public final Blocks blocks;
 
-    /**
-     * Constructor for {@link ForceFieldConfig}
-     *
-     * @param   plugin  the {@link ForceField} instance
-     */
     public ForceFieldConfig(@NotNull ForceField plugin) {
         final AnnoyingResource config = new AnnoyingResource(plugin, "config.yml");
+        defaults = new Default(config.getConfigurationSection("defaults"));
+        mobs = new Mobs(config.getConfigurationSection("mobs"));
+        entityBlacklist = new EntityBlacklist(config.getConfigurationSection("entity-blacklist"));
+        blocks = new Blocks(config.getConfigurationSection("blocks"));
+    }
 
-        final ConfigurationSection defaultSection = config.getConfigurationSection("default");
-        final boolean hasDefault = defaultSection != null;
-        defaultInverse = hasDefault && defaultSection.getBoolean("inverse", false);
-        defaultSpecial = hasDefault ? SpecialForcefield.matchSpecial(defaultSection.getString("tornado")) : null;
-        defaultMobs = hasDefault && defaultSection.getBoolean("mobs", false);
-        defaultRadius = hasDefault ? defaultSection.getDouble("radius", 5) : 5;
-        defaultStrength = hasDefault ? defaultSection.getDouble("strength", 0.5) : 0.5;
+    public static class Default {
+        public final boolean inverse;
+        public final boolean mobs;
+        public final double radius;
+        public final double strength;
+        @Nullable public final SpecialForcefield special;
 
-        // Entities
-        final ConfigurationSection entityBlacklistSection = config.getConfigurationSection("entity-blacklist");
-        final boolean hasEntityBlacklist = entityBlacklistSection != null;
-        entityBlacklist = hasEntityBlacklist ? entityBlacklistSection.getStringList("list").stream()
-                .map(string -> {
-                    try {
-                        return EntityType.valueOf(string.toUpperCase());
-                    } catch (final IllegalArgumentException e) {
-                        AnnoyingPlugin.log(Level.WARNING, "&eInvalid entity type for entity blacklist: &6" + string);
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet()) : new HashSet<>();
-        entityBlacklistTreatAsWhitelist = hasEntityBlacklist && entityBlacklistSection.getBoolean("treat-as-whitelist", false);
+        public Default(@Nullable ConfigurationSection section) {
+            if (section == null) {
+                inverse = false;
+                mobs = false;
+                radius = 5;
+                strength = 0.5;
+                special = null;
+                return;
+            }
+            inverse = section.getBoolean("inverse", false);
+            mobs = section.getBoolean("mobs", false);
+            radius = section.getDouble("radius", 5);
+            strength = section.getDouble("strength", 0.5);
+            special = SpecialForcefield.matchSpecial(section.getString("special")).orElse(null);
+        }
+    }
 
-        // Blocks
-        final ConfigurationSection blocksSection = config.getConfigurationSection("blocks");
-        final boolean hasBlocks = blocksSection != null;
-        blocksEnabled = hasBlocks && blocksSection.getBoolean("enabled");
-        blocksPlayers = hasBlocks ? new HashSet<>(blocksSection.getStringList("players")) : new HashSet<>();
-        blocksBlacklist = hasBlocks ? blocksSection.getStringList("blacklist.list").stream()
-                .map(Material::matchMaterial)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet()) : new HashSet<>();
-        blocksBlacklistTreatAsWhitelist = !hasBlocks || blocksSection.getBoolean("blacklist.treat-as-whitelist", true);
+    public static class Mobs {
+        public final boolean requireEyesight;
+
+        public Mobs(@Nullable ConfigurationSection section) {
+            if (section == null) {
+                requireEyesight = false;
+                return;
+            }
+            requireEyesight = section.getBoolean("require-eyesight", false);
+        }
+    }
+
+    public static class EntityBlacklist {
+        @NotNull public final Set<EntityType> list;
+        public final boolean treatAsWhitelist;
+
+        public EntityBlacklist(@Nullable ConfigurationSection section) {
+            if (section == null) {
+                list = new HashSet<>();
+                treatAsWhitelist = false;
+                return;
+            }
+            list = section.getStringList("list").stream()
+                    .map(string -> {
+                        try {
+                            return EntityType.valueOf(string.toUpperCase());
+                        } catch (final IllegalArgumentException e) {
+                            AnnoyingPlugin.log(Level.WARNING, "&eInvalid entity type for entity blacklist: &6" + string);
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+            treatAsWhitelist = section.getBoolean("treat-as-whitelist", false);
+        }
+    }
+
+    public static class Blocks {
+        public final boolean enabled;
+        @NotNull public final Set<String> players;
+        @NotNull public final Blacklist blacklist;
+
+        public Blocks(@Nullable ConfigurationSection section) {
+            if (section == null) {
+                enabled = false;
+                players = new HashSet<>();
+                blacklist = new Blacklist(null);
+                return;
+            }
+            enabled = section.getBoolean("enabled");
+            players = new HashSet<>(section.getStringList("players"));
+            blacklist = new Blacklist(section.getConfigurationSection("blacklist"));
+        }
+
+        public static class Blacklist {
+            @NotNull public final Set<Material> list = new HashSet<>();
+            public final boolean treatAsWhitelist;
+
+            public Blacklist(@Nullable ConfigurationSection section) {
+                if (section == null) {
+                    treatAsWhitelist = true;
+                    return;
+                }
+                for (final String string : section.getStringList("list")) {
+                    final Material material = Material.matchMaterial(string);
+                    if (material != null) list.add(material);
+                }
+                treatAsWhitelist = section.getBoolean("treat-as-whitelist", true);
+            }
+        }
     }
 }

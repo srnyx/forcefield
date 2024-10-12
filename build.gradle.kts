@@ -10,7 +10,7 @@ plugins {
     id("com.gradleup.shadow") version "8.3.3"
 }
 
-setupAnnoyingAPI("4.1.0", "xyz.srnyx", "2.0.0", "Very epic, yet simplistic, forcefield plugin!")
+setupAnnoyingAPI("adcefd006f", "xyz.srnyx", "3.0.0", "Very epic, yet simplistic, forcefield plugin!")
 spigotAPI("1.8.8")
 repository(Repository.PLACEHOLDER_API)
 dependencies.compileOnly("me.clip", "placeholderapi", "2.11.6")

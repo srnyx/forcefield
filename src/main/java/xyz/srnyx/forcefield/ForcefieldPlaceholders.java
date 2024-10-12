@@ -34,32 +34,28 @@ public class ForcefieldPlaceholders extends AnnoyingPAPIExpansion {
         String parameter = params;
         if (params.contains("_")) {
             final String[] split = params.split("_", 2);
-            player = Bukkit.getPlayerExact(split[1]);
             parameter = split[0];
+            player = Bukkit.getPlayerExact(split[1]);
         }
         if (player == null) return null;
 
-        // Get options
-        ForcefieldOptions options = plugin.forcefields.get(player.getUniqueId());
-        if (options == null) options = new ForcefieldOptions(plugin, player);
-
         // Return value
+        final ForcefieldOptions options = plugin.getOptions(player);
         switch (parameter) {
             case "enabled":
-                return String.valueOf(options.enabled());
+                return String.valueOf(options.enabled);
             case "inverse":
-                return String.valueOf(options.inverse());
+                return String.valueOf(options.inverse);
             case "special":
-                final SpecialForcefield special = options.special();
-                return special == null ? null : special.name();
+                return options.getSpecialName();
             case "mobs":
-                return String.valueOf(options.mobs());
+                return String.valueOf(options.mobs);
             case "blocks":
-                return String.valueOf(options.blocks());
+                return String.valueOf(options.blocks);
             case "radius":
-                return String.valueOf(options.radius());
+                return String.valueOf(options.radius);
             case "strength":
-                return String.valueOf(options.strength());
+                return String.valueOf(options.strength);
             default:
                 return null;
         }
