@@ -12,3 +12,5 @@ jobs:
       modrinth: YmVbdUou
       curseforge: 783093
     secrets: inherit
+    permissions:
+      contents: write
