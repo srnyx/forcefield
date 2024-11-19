@@ -10,7 +10,7 @@ plugins {
     id("com.gradleup.shadow") version "8.3.5"
 }
 
-setupAnnoyingAPI("5.1.4", "xyz.srnyx", "3.0.1", "Very epic, yet simplistic, forcefield plugin!")
+setupAnnoyingAPI("5.1.4", "xyz.srnyx", "3.0.0", "Very epic, yet simplistic, forcefield plugin!")
 spigotAPI("1.8.8")
 
 repository(Repository.PLACEHOLDER_API)
