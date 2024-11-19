@@ -1,13 +1,13 @@
 package xyz.srnyx.forcefield;
 
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-
+import org.bukkit.OfflinePlayer;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
-import org.jetbrains.annotations.NotNull;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import xyz.srnyx.annoyingapi.AnnoyingPlugin;
 import xyz.srnyx.annoyingapi.PluginPlatform;
 
@@ -27,8 +27,8 @@ public class ForceField extends AnnoyingPlugin {
     public ForceField() {
         options
                 .pluginOptions(pluginOptions -> pluginOptions.updatePlatforms(
-                        PluginPlatform.modrinth("forcefield"),
-                        PluginPlatform.hangar(this, "srnyx"),
+                        PluginPlatform.modrinth("YmVbdUou"),
+                        PluginPlatform.hangar(this),
                         PluginPlatform.spigot("107048")))
                 .bStatsOptions(bStatsOptions -> bStatsOptions.id(18869))
                 .dataOptions(dataOptions -> dataOptions
@@ -58,7 +58,7 @@ public class ForceField extends AnnoyingPlugin {
             @Override
             public void run() {
                 for (final ForcefieldOptions options : forcefields.values()) if (options.enabled) {
-                    final ForcefieldManager manager = new ForcefieldManager(ForceField.this, options.player);
+                    final ForcefieldManager manager = new ForcefieldManager(ForceField.this, options);
                     // Push entities
                     manager.pushEntities();
                     // Push blocks
@@ -68,19 +68,16 @@ public class ForceField extends AnnoyingPlugin {
         }.runTaskTimer(this, 0, 1);
     }
 
-    /**
-     * Gets the {@link ForcefieldOptions} instance for the specified player. If they don't have one, a new one will be created
-     *
-     * @param   player  the {@link Player}
-     *
-     * @return          the {@link ForcefieldOptions} instance of the specified {@link Player}
-     */
     @NotNull
-    public ForcefieldOptions getOptions(@NotNull Player player) {
-        final ForcefieldOptions options = forcefields.get(player.getUniqueId());
-        if (options != null) return options;
-        final ForcefieldOptions newOptions = new ForcefieldOptions(this, player);
-        forcefields.put(player.getUniqueId(), newOptions);
-        return newOptions;
+    public ForcefieldOptions getOptions(@NotNull OfflinePlayer player) {
+        // Offline
+        if (!player.isOnline()) return new ForcefieldOptions(this, player);
+
+        // Online
+        final UUID uuid = player.getUniqueId();
+        ForcefieldOptions options = forcefields.get(uuid);
+        if (options == null) options = new ForcefieldOptions(this, player);
+        forcefields.put(uuid, options);
+        return options;
     }
 }

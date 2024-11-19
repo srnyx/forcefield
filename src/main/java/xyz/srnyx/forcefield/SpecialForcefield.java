@@ -27,7 +27,7 @@ public enum SpecialForcefield {
 
         // Tornado spin effect
         final Vector perpendicular = new Vector(-vector.getZ(), 0, vector.getX());
-        final Vector inwardForce = vector.multiply(push.manager.inwardMultiple);
+        final Vector inwardForce = vector.multiply(-0.4 / (push.manager.options.radius == 0 ? 1 : push.manager.options.radius - 1));
         if (inverse) inwardForce.multiply(-1);
         vector = perpendicular.add(inwardForce).setY(-y);
 

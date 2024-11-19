@@ -1,12 +1,15 @@
 package xyz.srnyx.forcefield.objects;
 
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import xyz.srnyx.annoyingapi.AnnoyingPlugin;
 import xyz.srnyx.annoyingapi.command.AnnoyingSender;
 import xyz.srnyx.annoyingapi.data.EntityData;
+import xyz.srnyx.annoyingapi.data.StringData;
 import xyz.srnyx.annoyingapi.libs.javautilities.manipulation.Mapper;
 import xyz.srnyx.annoyingapi.message.AnnoyingMessage;
 import xyz.srnyx.annoyingapi.message.DefaultReplaceType;
@@ -14,14 +17,17 @@ import xyz.srnyx.annoyingapi.message.DefaultReplaceType;
 import xyz.srnyx.forcefield.ForceField;
 import xyz.srnyx.forcefield.SpecialForcefield;
 
+import java.util.Map;
+import java.util.logging.Level;
+
 
 /**
  * An object containing the options for the {@link #player}'s forcefield
  */
 public class ForcefieldOptions {
     @NotNull private final ForceField plugin;
-    @NotNull private final EntityData data;
-    @NotNull public final Player player;
+    @NotNull public final OfflinePlayer player;
+    @NotNull private final StringData data;
     public boolean enabled;
     public boolean inverse;
     public boolean mobs;
@@ -36,13 +42,20 @@ public class ForcefieldOptions {
      * @param   plugin  the plugin instance
      * @param   player  the player
      */
-    public ForcefieldOptions(@NotNull ForceField plugin, @NotNull Player player) {
+    public ForcefieldOptions(@NotNull ForceField plugin, @NotNull OfflinePlayer player) {
         this.plugin = plugin;
-        data = new EntityData(plugin, player);
         this.player = player;
 
-        // Old data conversion
-        data.convertOldData(ForceField.COLUMNS);
+        // Old data conversion TODO remove in future
+        if (player instanceof Player) {
+            data = new EntityData(plugin, (Player) player);
+            final Map<String, String> failed = ((EntityData) data).convertOldData(ForceField.COLUMNS);
+            if (failed == null || !failed.isEmpty()) AnnoyingPlugin.log(Level.SEVERE, "&cFailed to convert old data for &4" + player.getName() + "&c:&4 " + failed);
+        } else {
+            data = new StringData(plugin, player);
+        }
+
+        data.useCache(false);
 
         // Get options
         enabled = data.has("ff_enabled");
@@ -211,6 +224,8 @@ public class ForcefieldOptions {
      * @return  whether the {@link #player} can set/use {@link #blocks}
      */
     public boolean cantUseBlocks() {
-        return !plugin.config.blocks.enabled || !plugin.config.blocks.players.contains(player.getName()) || !player.hasPermission("forcefield.command.blocks");
+        if (!plugin.config.blocks.enabled) return true;
+        final Player online = player.getPlayer();
+        return online == null || !plugin.config.blocks.players.contains(online.getName()) || !online.hasPermission("forcefield.command.blocks");
     }
 }

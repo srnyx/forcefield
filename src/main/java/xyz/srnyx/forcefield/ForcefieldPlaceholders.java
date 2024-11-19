@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import xyz.srnyx.annoyingapi.AnnoyingPAPIExpansion;
+import xyz.srnyx.annoyingapi.Arguments;
 
 import xyz.srnyx.forcefield.objects.ForcefieldOptions;
 
@@ -29,13 +30,15 @@ public class ForcefieldPlaceholders extends AnnoyingPAPIExpansion {
     }
 
     @Override @Nullable
-    public String onPlaceholderRequest(@Nullable Player player, @NotNull String params) {
+    public String onPlaceholderRequest(@Nullable Player player, @NotNull String parameter) {
         // Get player & parameter
-        String parameter = params;
-        if (params.contains("_")) {
-            final String[] split = params.split("_", 2);
-            parameter = split[0];
-            player = Bukkit.getPlayerExact(split[1]);
+        if (parameter.contains("_")) {
+            final Arguments args = new Arguments(parameter.split("_", 2));
+            parameter = args.getArgument(0);
+            if (parameter == null) return null;
+            player = args.getArgumentOptional(1)
+                    .map(Bukkit::getPlayerExact)
+                    .orElse(null);
         }
         if (player == null) return null;
 

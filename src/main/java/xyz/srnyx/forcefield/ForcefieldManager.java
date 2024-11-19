@@ -7,7 +7,6 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.*;
 import org.bukkit.util.Vector;
 
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,23 +21,15 @@ import java.util.function.Predicate;
 
 public class ForcefieldManager {
     @NotNull private final ForceField plugin;
-    @NotNull private final Player player;
     @NotNull public final ForcefieldOptions options;
-    public final double inwardMultiple;
+    @NotNull private final Player player;
 
-    /**
-     * Creates a new {@link ForcefieldManager} instance
-     *
-     * @param   plugin  the {@link ForceField} instance
-     * @param   player  the {@link Player} instance
-     */
-    @Contract(pure = true)
-    public ForcefieldManager(@NotNull ForceField plugin, @NotNull Player player) {
+    public ForcefieldManager(@NotNull ForceField plugin, @NotNull ForcefieldOptions options) {
         this.plugin = plugin;
-        this.player = player;
-        this.options = plugin.forcefields.get(player.getUniqueId());
-        final double radius = options.radius == 0 ? 1 : options.radius - 1;
-        this.inwardMultiple = -0.4 / radius;
+        this.options = options;
+        final Player online = options.player.getPlayer();
+        if (online == null) throw new IllegalArgumentException("Player isn't online: " + options.player.getName());
+        player = online;
     }
 
     /**

@@ -1,6 +1,6 @@
 package xyz.srnyx.forcefield.commands;
 
-import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -71,25 +71,13 @@ public class ForcefieldCommand extends AnnoyingCommand {
             }
 
             // Check permission
-            final String option = args[1].toLowerCase();
-            if (!sender.checkPermission("forcefield.command." + option)) return;
+            final String option = sender.getArgument(1, String::toLowerCase);
+            if (option == null || !sender.checkPermission("forcefield.command." + option)) return;
 
-            // Get target
-            final Player target;
-            if (args.length == 3) {
-                if (!sender.checkPermission("forcefield.others")) return;
-                target = Bukkit.getPlayer(args[2]);
-                if (target == null) {
-                    sender.invalidArgument(args[2]);
-                    return;
-                }
-            } else if (sender.checkPlayer()) {
-                target = sender.getPlayer();
-            } else {
-                return;
-            }
-            final String name = target.getName();
-            final ForcefieldOptions options = plugin.getOptions(target);
+            // Get target options
+            final ForcefieldOptions options = getTargetOptions(sender, 2);
+            if (options == null) return;
+            final String name = options.player.getName();
 
             switch (option) {
                 // toggle
@@ -150,23 +138,12 @@ public class ForcefieldCommand extends AnnoyingCommand {
         // set
         if (sender.argEquals(0, "set")) {
             // Check permission
-            final String option = args[1].toLowerCase();
-            if (!sender.checkPermission("forcefield.command." + option)) return;
+            final String option = sender.getArgument(1, String::toLowerCase);
+            if (option == null || !sender.checkPermission("forcefield.command." + option)) return;
 
-            // Get target
-            final Player target;
-            if (args.length == 4 && sender.checkPermission("forcefield.others")) {
-                target = Bukkit.getPlayer(args[3]);
-                if (target == null) {
-                    sender.invalidArgument(args[3]);
-                    return;
-                }
-            } else if (sender.checkPlayer()) {
-                target = sender.getPlayer();
-            } else {
-                return;
-            }
-            final ForcefieldOptions options = plugin.getOptions(target);
+            // Get target options
+            final ForcefieldOptions options = getTargetOptions(sender, 3);
+            if (options == null) return;
 
             switch (option) {
                 // toggle
@@ -201,6 +178,18 @@ public class ForcefieldCommand extends AnnoyingCommand {
         }
 
         sender.invalidArguments();
+    }
+
+    @Nullable
+    private ForcefieldOptions getTargetOptions(@NotNull AnnoyingSender sender, int index) {
+        OfflinePlayer player = null;
+        if (sender.args.length == index + 1) {
+            if (!sender.checkPermission("forcefield.others")) return null;
+            player = sender.getArgumentOptionalFlat(index, BukkitUtility::getOfflinePlayer).orElse(null);
+        } else if (sender.checkPlayer()) {
+            player = sender.getPlayer();
+        }
+        return player != null ? plugin.getOptions(player) : null;
     }
     
     @NotNull private static final Set<String> SPECIAL = new HashSet<>();
