@@ -7,7 +7,7 @@ import xyz.srnyx.gradlegalaxy.utility.spigotAPI
 plugins {
     java
     id("xyz.srnyx.gradle-galaxy") version "1.3.2"
-    id("com.gradleup.shadow") version "8.3.3"
+    id("com.gradleup.shadow") version "8.3.5"
 }
 
 setupAnnoyingAPI("adcefd006f", "xyz.srnyx", "3.0.0", "Very epic, yet simplistic, forcefield plugin!")
